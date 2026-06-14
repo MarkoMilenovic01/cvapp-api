@@ -1,6 +1,5 @@
-package com.best.cvapp.config;
+package com.best.cvapp.auth;
 
-import com.best.cvapp.auth.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

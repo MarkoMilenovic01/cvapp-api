@@ -1,5 +1,6 @@
-package com.best.cvapp.config;
+package com.best.cvapp.shared.config;
 
+import com.best.cvapp.auth.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

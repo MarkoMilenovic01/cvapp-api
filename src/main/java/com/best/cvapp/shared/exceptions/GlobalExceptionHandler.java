@@ -1,8 +1,9 @@
-package com.best.cvapp.exceptions;
+package com.best.cvapp.shared.exceptions;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -80,5 +81,15 @@ public class GlobalExceptionHandler {
             response.put("details", details);
         }
         return response;
+    }
+
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildResponse(
+                HttpStatus.FORBIDDEN,
+                "Access denied — you don't have permission to access this resource",
+                null
+        ));
     }
 }

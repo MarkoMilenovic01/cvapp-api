@@ -4,6 +4,8 @@ import com.best.cvapp.auth.dto.AuthResponse;
 import com.best.cvapp.auth.dto.LoginRequest;
 import com.best.cvapp.auth.dto.RefreshTokenRequest;
 import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.token.RefreshToken;
+import com.best.cvapp.auth.token.RefreshTokenService;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;

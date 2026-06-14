@@ -1,4 +1,4 @@
-package com.best.cvapp.config;
+package com.best.cvapp.shared.config;
 
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;

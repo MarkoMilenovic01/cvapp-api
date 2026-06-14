@@ -1,9 +1,6 @@
-package com.best.cvapp.config;
+package com.best.cvapp.user;
 
 
-import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
-import com.best.cvapp.user.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DataSeeder implements CommandLineRunner {
+public class UserSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
