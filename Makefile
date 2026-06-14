@@ -2,7 +2,7 @@ run:
 	./mvnw spring-boot:run
 
 build:
-	./mvnw clean install
+	./mvnw clean install -DskipTests
 
 test:
 	./mvnw test
