@@ -1,6 +1,5 @@
 package com.best.cvapp.auth;
 
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -12,6 +11,12 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
 
+/**
+ * Handles all JWT operations:
+ * - Generating tokens after login/register
+ * - Extracting claims (email, role) from tokens
+ * - Validating tokens on each request
+ */
 @Service
 public class JwtService {
 
@@ -21,6 +26,7 @@ public class JwtService {
     @Value("${app.jwt.expiration}")
     private long expiration;
 
+    // Creates a JWT token containing the user's email and role
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .subject(userDetails.getUsername())
@@ -31,10 +37,12 @@ public class JwtService {
                 .compact();
     }
 
+    // Extracts email from token — used to identify the user on each request
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
+    // Checks if token belongs to the user and hasn't expired
     public boolean isTokenValid(String token, UserDetails userDetails) {
         return extractEmail(token).equals(userDetails.getUsername())
                 && !isTokenExpired(token);
