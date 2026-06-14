@@ -1,6 +1,5 @@
-package com.best.cvapp.config;
+package com.best.cvapp.auth;
 
-import com.best.cvapp.auth.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +16,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Intercepts every HTTP request exactly once.
+ * Extracts the JWT from the Authorization header,
+ * validates it, and sets the user in the SecurityContext
+ * so Spring Security knows who is making the request.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -33,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // Skip filter if no Bearer token present
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -41,6 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt = authHeader.substring(7);
         final String email = jwtService.extractEmail(jwt);
 
+        // Only authenticate if email found and user not already authenticated
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
