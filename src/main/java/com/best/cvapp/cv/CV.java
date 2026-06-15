@@ -1,5 +1,8 @@
 package com.best.cvapp.cv;
 
+import com.best.cvapp.cv.education.Education;
+import com.best.cvapp.cv.experience.Experience;
+import com.best.cvapp.cv.skill.Skill;
 import com.best.cvapp.user.User;
 import jakarta.persistence.*;
 import lombok.*;

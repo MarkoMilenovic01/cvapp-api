@@ -1,18 +1,19 @@
-package com.best.cvapp.cv;
+package com.best.cvapp.cv.experience;
 
+import com.best.cvapp.cv.CV;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "education")
+@Table(name = "experience")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Education {
+public class Experience {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +23,9 @@ public class Education {
     @JoinColumn(name = "cv_id", nullable = false)
     private CV cv;
 
-    private String institution;
-    private String degree;
-    private String fieldOfStudy;
+    private String companyName;
+    private String position;
+    private String description;
     private LocalDate startDate;
     private LocalDate endDate;
     private boolean current;
