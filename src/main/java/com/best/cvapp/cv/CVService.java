@@ -110,7 +110,7 @@ public class CVService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    private CVResponse mapToResponse(CV cv) {
+    public CVResponse mapToResponse(CV cv) {
         List<EducationResponse> education = cv.getEducation().stream()
                 .map(e -> new EducationResponse(
                         e.getId(),
