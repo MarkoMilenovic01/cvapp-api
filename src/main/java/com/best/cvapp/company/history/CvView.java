@@ -1,9 +1,9 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.history;
 
+import com.best.cvapp.company.Company;
 import com.best.cvapp.cv.CV;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 

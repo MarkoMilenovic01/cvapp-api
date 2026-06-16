@@ -1,4 +1,4 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.favorite;
 
 import jakarta.persistence.Embeddable;
 import lombok.*;

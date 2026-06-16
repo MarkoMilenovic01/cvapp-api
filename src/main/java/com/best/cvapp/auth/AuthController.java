@@ -1,9 +1,6 @@
 package com.best.cvapp.auth;
 
-import com.best.cvapp.auth.dto.AuthResponse;
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RefreshTokenRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,5 +32,10 @@ public class AuthController {
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<AuthResponse> acceptInvite(@RequestBody @Valid AcceptInviteRequest request) {
+        return ResponseEntity.ok(authService.acceptInvite(request));
     }
 }

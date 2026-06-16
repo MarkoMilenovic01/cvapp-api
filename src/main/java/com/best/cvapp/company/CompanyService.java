@@ -1,6 +1,12 @@
 package com.best.cvapp.company;
 
-import com.best.cvapp.company.dto.*;
+import com.best.cvapp.company.favorite.CvSummaryResponse;
+import com.best.cvapp.company.favorite.FavoriteCV;
+import com.best.cvapp.company.favorite.FavoriteCVId;
+import com.best.cvapp.company.favorite.FavoriteCVRepository;
+import com.best.cvapp.company.history.CvView;
+import com.best.cvapp.company.history.CvViewRepository;
+import com.best.cvapp.company.history.CvViewResponse;
 import com.best.cvapp.cv.CV;
 import com.best.cvapp.cv.CVRepository;
 import com.best.cvapp.cv.CVService;

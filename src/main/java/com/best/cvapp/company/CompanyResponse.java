@@ -1,4 +1,4 @@
-package com.best.cvapp.company.dto;
+package com.best.cvapp.company;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,5 +1,6 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.favorite;
 
+import com.best.cvapp.company.Company;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
