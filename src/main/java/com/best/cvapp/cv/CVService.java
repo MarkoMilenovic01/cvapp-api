@@ -1,6 +1,11 @@
 package com.best.cvapp.cv;
 
-import com.best.cvapp.cv.dto.*;
+import com.best.cvapp.cv.education.Education;
+import com.best.cvapp.cv.education.EducationResponse;
+import com.best.cvapp.cv.experience.Experience;
+import com.best.cvapp.cv.experience.ExperienceResponse;
+import com.best.cvapp.cv.skill.Skill;
+import com.best.cvapp.cv.skill.SkillResponse;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -105,7 +110,7 @@ public class CVService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    private CVResponse mapToResponse(CV cv) {
+    public CVResponse mapToResponse(CV cv) {
         List<EducationResponse> education = cv.getEducation().stream()
                 .map(e -> new EducationResponse(
                         e.getId(),

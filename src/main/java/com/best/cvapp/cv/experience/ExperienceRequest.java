@@ -1,14 +1,13 @@
-package com.best.cvapp.cv.dto;
+package com.best.cvapp.cv.experience;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
-@AllArgsConstructor
-public class ExperienceResponse {
-    private Long id;
+@Setter
+public class ExperienceRequest {
     private String companyName;
     private String position;
     private String description;

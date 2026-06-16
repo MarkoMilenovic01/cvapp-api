@@ -1,14 +1,13 @@
-package com.best.cvapp.cv.dto;
+package com.best.cvapp.cv.education;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
-@AllArgsConstructor
-public class EducationResponse {
-    private Long id;
+@Setter
+public class EducationRequest {
     private String institution;
     private String degree;
     private String fieldOfStudy;

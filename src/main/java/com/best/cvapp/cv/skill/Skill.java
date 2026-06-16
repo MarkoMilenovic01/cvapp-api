@@ -1,5 +1,6 @@
-package com.best.cvapp.cv;
+package com.best.cvapp.cv.skill;
 
+import com.best.cvapp.cv.CV;
 import jakarta.persistence.*;
 import lombok.*;
 
