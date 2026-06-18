@@ -35,6 +35,7 @@ public class UserSeeder implements CommandLineRunner {
                 .email(email)
                 .password(passwordEncoder.encode("password"))
                 .role(role)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 
@@ -52,6 +53,7 @@ public class UserSeeder implements CommandLineRunner {
                 .email("company@cvapp.com")
                 .password(passwordEncoder.encode("password"))
                 .role(Role.COMPANY)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 

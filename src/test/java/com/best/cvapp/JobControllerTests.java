@@ -4,6 +4,7 @@ import com.best.cvapp.auth.dto.LoginRequest;
 import com.best.cvapp.auth.dto.RegisterRequest;
 import com.best.cvapp.company.Company;
 import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -412,6 +413,7 @@ public class JobControllerTests {
                 .email(email)
                 .password(passwordEncoder.encode("password"))
                 .role(Role.COMPANY)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 

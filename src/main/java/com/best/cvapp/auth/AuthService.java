@@ -1,11 +1,10 @@
 package com.best.cvapp.auth;
 
-import com.best.cvapp.auth.dto.AuthResponse;
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RefreshTokenRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.admin.CompanyInviteService;
+import com.best.cvapp.auth.dto.*;
 import com.best.cvapp.auth.token.RefreshToken;
 import com.best.cvapp.auth.token.RefreshTokenService;
+import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -26,16 +25,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
+    private final CompanyInviteService companyInviteService;
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        userRepository.findByEmail(request.getEmail()).ifPresent(existingUser -> {
+            if (existingUser.getProvider() == AuthProvider.GOOGLE) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "This email is registered with Google. Please login with Google.");
+            }
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
-        }
+        });
 
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 
@@ -76,5 +81,9 @@ public class AuthService {
     public void logout(RefreshTokenRequest request) {
         RefreshToken refreshToken = refreshTokenService.validateRefreshToken(request.getRefreshToken());
         refreshTokenService.deleteByUser(refreshToken.getUser());
+    }
+
+    public AuthResponse acceptInvite(AcceptInviteRequest request) {
+        return companyInviteService.acceptInvite(request.getToken(), request.getPassword());
     }
 }

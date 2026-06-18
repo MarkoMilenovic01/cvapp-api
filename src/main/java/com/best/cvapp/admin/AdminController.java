@@ -1,0 +1,26 @@
+package com.best.cvapp.admin;
+
+import com.best.cvapp.auth.dto.InviteRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/admin")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminController {
+
+    private final CompanyInviteService companyInviteService;
+
+    @PostMapping("/invite-company")
+    public ResponseEntity<Void> inviteCompany(@RequestBody @Valid InviteRequest request) {
+        companyInviteService.sendInvite(request.getEmail());
+        return ResponseEntity.noContent().build();
+    }
+}
