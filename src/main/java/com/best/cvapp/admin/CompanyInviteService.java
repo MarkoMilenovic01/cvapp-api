@@ -5,6 +5,7 @@ import com.best.cvapp.auth.dto.AuthResponse;
 import com.best.cvapp.auth.token.RefreshToken;
 import com.best.cvapp.auth.token.RefreshTokenService;
 import com.best.cvapp.email.EmailService;
+import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -68,6 +69,7 @@ public class CompanyInviteService {
                 .email(invite.getEmail())
                 .password(passwordEncoder.encode(password))
                 .role(Role.COMPANY)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 

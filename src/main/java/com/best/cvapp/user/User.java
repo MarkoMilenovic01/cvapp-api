@@ -46,6 +46,11 @@ public class User implements UserDetails {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider = AuthProvider.LOCAL;
+
     /**
      * Returns the role as a Spring Security authority.
      * This is what @PreAuthorize("hasRole('ADMIN')") checks against.

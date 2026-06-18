@@ -5,6 +5,7 @@ import com.best.cvapp.company.CompanyRepository;
 import com.best.cvapp.cv.CV;
 import com.best.cvapp.cv.CVRepository;
 import com.best.cvapp.job.*;
+import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -125,6 +126,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                             .email(email)
                             .password(passwordEncoder.encode(password))
                             .role(role)
+                            .provider(AuthProvider.LOCAL)  // add this
                             .enabled(true)
                             .build();
 
