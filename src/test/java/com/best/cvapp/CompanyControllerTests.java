@@ -4,6 +4,7 @@ import com.best.cvapp.auth.dto.LoginRequest;
 import com.best.cvapp.auth.dto.RegisterRequest;
 import com.best.cvapp.company.Company;
 import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -279,6 +280,7 @@ public class CompanyControllerTests {
         User user = User.builder()
                 .email("company@best.com")
                 .password(passwordEncoder.encode("password"))
+                .provider(AuthProvider.LOCAL)
                 .role(Role.COMPANY)
                 .enabled(true)
                 .build();
