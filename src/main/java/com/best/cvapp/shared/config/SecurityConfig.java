@@ -1,6 +1,6 @@
 package com.best.cvapp.shared.config;
 
-import com.best.cvapp.auth.JwtAuthenticationFilter;
+import com.best.cvapp.auth.token.jwt.JwtAuthenticationFilter;
 import com.best.cvapp.auth.oauth.CustomOAuth2UserService;
 import com.best.cvapp.auth.oauth.OAuth2SuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;

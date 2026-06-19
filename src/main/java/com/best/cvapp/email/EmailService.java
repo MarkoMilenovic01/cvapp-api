@@ -25,4 +25,16 @@ public class EmailService {
                 "\n\nThis link expires in 48 hours.");
         mailSender.send(message);
     }
+
+
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        String link = frontendUrl + "/reset-password?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Reset your CVApp password");
+        message.setText("Click the link below to reset your password:\n\n" + link +
+                "\n\nThis link expires in 1 hour. If you did not request this, ignore this email.");
+        mailSender.send(message);
+    }
 }

@@ -34,4 +34,14 @@ public class Company {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    // ── File upload ───────────────────────────────────────────────────────────
+
+    @Column(name = "photo_url")
+    private String photoUrl;
+
+    @Column(name = "photo_public_id")
+    private String photoPublicId;
+
+
 }

@@ -1,8 +1,8 @@
 package com.best.cvapp;
 
-import com.best.cvapp.admin.CompanyInvite;
-import com.best.cvapp.admin.CompanyInviteRepository;
-import com.best.cvapp.auth.dto.AcceptInviteRequest;
+import com.best.cvapp.auth.token.invitecompany.CompanyInvite;
+import com.best.cvapp.auth.token.invitecompany.CompanyInviteRepository;
+import com.best.cvapp.auth.token.invitecompany.AcceptInviteRequest;
 import com.best.cvapp.auth.dto.LoginRequest;
 import com.best.cvapp.auth.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -181,6 +181,7 @@ public class CompanyInviteControllerTests {
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setPassword(password);
+        request.setConfirmPassword(password);
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

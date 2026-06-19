@@ -1,6 +1,12 @@
 package com.best.cvapp.auth;
 
-import com.best.cvapp.auth.dto.*;
+import com.best.cvapp.auth.token.invitecompany.AcceptInviteRequest;
+import com.best.cvapp.auth.dto.AuthResponse;
+import com.best.cvapp.auth.dto.LoginRequest;
+import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.token.passwordreset.ForgotPasswordRequest;
+import com.best.cvapp.auth.token.passwordreset.PasswordResetRequest;
+import com.best.cvapp.auth.token.refresh.RefreshTokenRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +43,17 @@ public class AuthController {
     @PostMapping("/accept-invite")
     public ResponseEntity<AuthResponse> acceptInvite(@RequestBody @Valid AcceptInviteRequest request) {
         return ResponseEntity.ok(authService.acceptInvite(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -411,6 +411,7 @@ public class CVControllerTests {
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setPassword(password);
+        request.setConfirmPassword(password);
         return request;
     }
 

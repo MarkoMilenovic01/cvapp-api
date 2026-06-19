@@ -502,6 +502,7 @@ public class JobControllerTests {
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setPassword(password);
+        request.setConfirmPassword(password);
         return request;
     }
 

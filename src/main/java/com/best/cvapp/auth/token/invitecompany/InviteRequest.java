@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.dto;
+package com.best.cvapp.auth.token.invitecompany;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

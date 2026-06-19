@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token;
+package com.best.cvapp.auth.token.refresh;
 
 import com.best.cvapp.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;

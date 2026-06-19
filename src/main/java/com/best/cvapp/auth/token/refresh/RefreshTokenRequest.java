@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.dto;
+package com.best.cvapp.auth.token.refresh;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.best.cvapp.auth;
+package com.best.cvapp.auth.token.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

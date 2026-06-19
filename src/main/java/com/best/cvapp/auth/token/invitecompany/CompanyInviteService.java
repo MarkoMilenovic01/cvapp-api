@@ -1,9 +1,9 @@
-package com.best.cvapp.admin;
+package com.best.cvapp.auth.token.invitecompany;
 
-import com.best.cvapp.auth.JwtService;
+import com.best.cvapp.auth.token.jwt.JwtService;
 import com.best.cvapp.auth.dto.AuthResponse;
-import com.best.cvapp.auth.token.RefreshToken;
-import com.best.cvapp.auth.token.RefreshTokenService;
+import com.best.cvapp.auth.token.refresh.RefreshToken;
+import com.best.cvapp.auth.token.refresh.RefreshTokenService;
 import com.best.cvapp.email.EmailService;
 import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;

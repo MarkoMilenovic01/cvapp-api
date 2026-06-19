@@ -1,7 +1,7 @@
 package com.best.cvapp;
 
 import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RefreshTokenRequest;
+import com.best.cvapp.auth.token.refresh.RefreshTokenRequest;
 import com.best.cvapp.auth.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -201,6 +201,7 @@ public class AuthControllerTests {
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setPassword(password);
+        request.setConfirmPassword(password);
         return request;
     }
 

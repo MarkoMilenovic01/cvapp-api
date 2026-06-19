@@ -1,6 +1,7 @@
 package com.best.cvapp.admin;
 
-import com.best.cvapp.auth.dto.InviteRequest;
+import com.best.cvapp.auth.token.invitecompany.CompanyInviteService;
+import com.best.cvapp.auth.token.invitecompany.InviteRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
