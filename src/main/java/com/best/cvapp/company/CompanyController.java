@@ -3,6 +3,9 @@ package com.best.cvapp.company;
 import com.best.cvapp.company.favorite.CvSummaryResponse;
 import com.best.cvapp.company.history.CvViewResponse;
 import com.best.cvapp.cv.CVResponse;
+import com.best.cvapp.cv.CVSearchRequest;
+import com.best.cvapp.cv.CVSearchService;
+import com.best.cvapp.cv.CVService;
 import com.best.cvapp.job.JobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,7 @@ public class CompanyController {
 
     private final CompanyService companyService;
     private final JobService jobService;
+    private final CVSearchService cvSearchService;
 
     // --- Profile ---
 
@@ -47,6 +51,22 @@ public class CompanyController {
     public ResponseEntity<CVResponse> getCVById(@PathVariable Long id) {
         return ResponseEntity.ok(companyService.getCVById(id));
     }
+
+    // ── NEW: CV Search ────────────────────────────────────────────────────────
+
+    /**
+     * GET /api/company/cvs/search?keyword=java&skill=spring&location=ljubljana
+     *
+     * All params are optional — omitting all returns all CVs (same as /cvs).
+     * Supports standard pagination: ?page=0&size=10&sort=createdAt,desc
+     */
+    @GetMapping("/cvs/search")
+    public ResponseEntity<Page<CvSummaryResponse>> searchCVs(
+            CVSearchRequest request,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+        return ResponseEntity.ok(cvSearchService.searchCVs(request, pageable));
+    }
+
 
     // --- Favorites ---
 
