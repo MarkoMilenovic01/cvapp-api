@@ -1,8 +1,8 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.token.refresh.RefreshTokenRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.session.dto.RefreshTokenRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -198,24 +198,15 @@ public class AuthControllerTests {
     }
 
     private RegisterRequest registerRequest(String email, String password) {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        request.setConfirmPassword(password);
-        return request;
+        return new RegisterRequest(email, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(email, password);
     }
 
     private RefreshTokenRequest refreshTokenRequest(String token) {
-        RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken(token);
-        return request;
+        return new RefreshTokenRequest(token);
     }
 
     private String toJson(Object obj) throws Exception {

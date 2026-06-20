@@ -1,7 +1,7 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.best.cvapp.company.Company;
 import com.best.cvapp.company.CompanyRepository;
 import com.best.cvapp.user.AuthProvider;
@@ -341,18 +341,11 @@ public class CompanyControllerTests {
     }
 
     private RegisterRequest registerRequest(String email, String password) {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        request.setConfirmPassword(password);
-        return request;
+        return new RegisterRequest(email, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(email, password);
     }
 
     private String companyRequestJson(String name, String description, String website, String industry) {

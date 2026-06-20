@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token.jwt;
+package com.best.cvapp.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

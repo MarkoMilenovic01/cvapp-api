@@ -1,6 +1,6 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.best.cvapp.company.Company;
 import com.best.cvapp.company.CompanyRepository;
 import com.best.cvapp.user.AuthProvider;
@@ -477,10 +477,7 @@ public class SearchControllerTests {
     }
 
     private String registerUserAndGetToken(String email) throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword("123456");
-        request.setConfirmPassword("123456");
+        RegisterRequest request = new RegisterRequest(email, "123456", "123456");
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

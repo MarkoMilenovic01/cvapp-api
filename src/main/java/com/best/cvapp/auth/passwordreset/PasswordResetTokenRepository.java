@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token.passwordreset;
+package com.best.cvapp.auth.passwordreset;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

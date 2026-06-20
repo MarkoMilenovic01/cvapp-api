@@ -1,6 +1,6 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -408,11 +408,7 @@ public class CVControllerTests {
     }
 
     private RegisterRequest registerRequest(String email, String password) {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        request.setConfirmPassword(password);
-        return request;
+        return new RegisterRequest(email, password, password);
     }
 
     private String cvRequestJson(String firstName, String summary) {

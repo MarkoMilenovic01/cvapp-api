@@ -1,5 +1,6 @@
-package com.best.cvapp.auth.token.invitecompany;
+package com.best.cvapp.auth.session;
 
+import com.best.cvapp.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -7,26 +8,24 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "company_invites")
+@Table(name = "refresh_tokens")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CompanyInvite {
+public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
-    private boolean used = false;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;
@@ -34,4 +33,8 @@ public class CompanyInvite {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiresAt);
+    }
 }

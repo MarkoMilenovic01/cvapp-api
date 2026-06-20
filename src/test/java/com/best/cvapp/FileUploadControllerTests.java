@@ -1,6 +1,6 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -262,10 +262,8 @@ public class FileUploadControllerTests {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String registerAndGetToken(String email, String password) throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        request.setConfirmPassword(password);
+        RegisterRequest request = new RegisterRequest(email, password, password);
+
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

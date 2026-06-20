@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token.passwordreset;
+package com.best.cvapp.auth.passwordreset;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,4 +30,8 @@ public class PasswordResetToken {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiresAt);
+    }
 }

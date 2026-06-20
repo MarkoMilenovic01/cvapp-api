@@ -1,10 +1,10 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.token.invitecompany.CompanyInvite;
-import com.best.cvapp.auth.token.invitecompany.CompanyInviteRepository;
-import com.best.cvapp.auth.token.invitecompany.AcceptInviteRequest;
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.companyinvite.CompanyInvite;
+import com.best.cvapp.auth.companyinvite.CompanyInviteRepository;
+import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -178,10 +178,8 @@ public class CompanyInviteControllerTests {
     }
 
     private String registerUserAndGetToken(String email, String password) throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        request.setConfirmPassword(password);
+        RegisterRequest request = new RegisterRequest(email, password, password);
+
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -209,17 +207,12 @@ public class CompanyInviteControllerTests {
     private InviteRequestBody inviteRequest(String email) { return new InviteRequestBody(email); }
 
     private AcceptInviteRequest acceptInviteRequest(String token, String password) {
-        AcceptInviteRequest request = new AcceptInviteRequest();
-        request.setToken(token);
-        request.setPassword(password);
-        return request;
+        return new AcceptInviteRequest(token, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+
+        return new LoginRequest(email, password);
     }
 
     private String toJson(Object obj) throws Exception {

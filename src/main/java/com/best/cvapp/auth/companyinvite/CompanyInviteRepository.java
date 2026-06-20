@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token.invitecompany;
+package com.best.cvapp.auth.companyinvite;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

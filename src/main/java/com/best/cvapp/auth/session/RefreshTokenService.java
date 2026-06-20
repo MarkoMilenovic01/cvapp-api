@@ -1,4 +1,4 @@
-package com.best.cvapp.auth.token.refresh;
+package com.best.cvapp.auth.session;
 
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
