@@ -35,8 +35,6 @@ public class Company {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    // ── File upload ───────────────────────────────────────────────────────────
-
     @Column(name = "photo_url")
     private String photoUrl;
 

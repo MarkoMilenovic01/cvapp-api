@@ -1,5 +1,7 @@
 package com.best.cvapp.company;
 
+import com.best.cvapp.company.profile.Company;
+import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.shared.storage.CloudinaryService;
 import com.best.cvapp.shared.storage.UploadResponse;
 import com.best.cvapp.user.User;

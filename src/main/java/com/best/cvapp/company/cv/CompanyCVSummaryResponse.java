@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CvSummaryResponse {
+public class CompanyCVSummaryResponse {
     private Long id;
     private String firstName;
     private String lastName;
