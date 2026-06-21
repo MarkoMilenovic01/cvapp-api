@@ -1,7 +1,7 @@
 package com.best.cvapp.company.history;
 
 import com.best.cvapp.company.profile.Company;
-import com.best.cvapp.cv.CV;
+import com.best.cvapp.cv.profile.CV;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

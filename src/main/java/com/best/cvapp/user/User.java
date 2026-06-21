@@ -1,5 +1,6 @@
 package com.best.cvapp.user;
 
+import com.best.cvapp.auth.oauth.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,11 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Represents a user in the system.
- * Implements UserDetails so Spring Security can use it directly
- * for authentication and authorization.
- */
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -40,6 +37,7 @@ public class User implements UserDetails {
     private Role role;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
 
     @CreationTimestamp
@@ -51,10 +49,6 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AuthProvider provider = AuthProvider.LOCAL;
 
-    /**
-     * Returns the role as a Spring Security authority.
-     * This is what @PreAuthorize("hasRole('ADMIN')") checks against.
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

@@ -3,7 +3,7 @@ package com.best.cvapp.company.history;
 import com.best.cvapp.company.history.dto.CVViewResponse;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyProfileService;
-import com.best.cvapp.cv.CV;
+import com.best.cvapp.cv.profile.CV;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

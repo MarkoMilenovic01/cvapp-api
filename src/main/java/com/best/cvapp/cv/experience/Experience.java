@@ -1,6 +1,6 @@
 package com.best.cvapp.cv.experience;
 
-import com.best.cvapp.cv.CV;
+import com.best.cvapp.cv.profile.CV;
 import jakarta.persistence.*;
 import lombok.*;
 

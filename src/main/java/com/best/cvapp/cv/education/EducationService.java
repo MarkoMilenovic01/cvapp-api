@@ -1,7 +1,7 @@
 package com.best.cvapp.cv.education;
 
-import com.best.cvapp.cv.CV;
-import com.best.cvapp.cv.CVRepository;
+import com.best.cvapp.cv.profile.CV;
+import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
