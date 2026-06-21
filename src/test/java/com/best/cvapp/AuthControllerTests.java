@@ -1,8 +1,8 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RefreshTokenRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.session.dto.RefreshTokenRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ public class AuthControllerTests {
     void shouldRegisterSuccessfully() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "123456"))))
+                        .content(toJson(registerRequest("test@best.com", "12345678"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
@@ -51,11 +51,11 @@ public class AuthControllerTests {
 
     @Test
     void shouldFailRegisterWithDuplicateEmail() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "123456"))))
+                        .content(toJson(registerRequest("test@best.com", "12345678"))))
                 .andExpect(status().isConflict());
     }
 
@@ -63,7 +63,7 @@ public class AuthControllerTests {
     void shouldFailRegisterWithInvalidEmail() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("not-an-email", "123456"))))
+                        .content(toJson(registerRequest("not-an-email", "12345678"))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -79,11 +79,11 @@ public class AuthControllerTests {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("test@best.com", "123456"))))
+                        .content(toJson(loginRequest("test@best.com", "12345678"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
@@ -92,7 +92,7 @@ public class AuthControllerTests {
 
     @Test
     void shouldFailLoginWithWrongPassword() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,7 +104,7 @@ public class AuthControllerTests {
     void shouldFailLoginWithNonExistentEmail() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("nobody@best.com", "123456"))))
+                        .content(toJson(loginRequest("nobody@best.com", "12345678"))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -112,7 +112,7 @@ public class AuthControllerTests {
 
     @Test
     void shouldRefreshTokenSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(register("test@best.com", "123456"));
+        String refreshToken = extractRefreshToken(register("test@best.com", "12345678"));
 
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -135,7 +135,7 @@ public class AuthControllerTests {
 
     @Test
     void shouldLogoutSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(register("test@best.com", "123456"));
+        String refreshToken = extractRefreshToken(register("test@best.com", "12345678"));
 
         mockMvc.perform(post("/api/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +145,7 @@ public class AuthControllerTests {
 
     @Test
     void shouldFailRefreshAfterLogout() throws Exception {
-        String refreshToken = extractRefreshToken(register("test@best.com", "123456"));
+        String refreshToken = extractRefreshToken(register("test@best.com", "12345678"));
 
         // Logout first
         mockMvc.perform(post("/api/auth/logout")
@@ -170,7 +170,7 @@ public class AuthControllerTests {
 
     @Test
     void shouldAllowAccessWithValidToken() throws Exception {
-        String accessToken = extractAccessToken(register("test@best.com", "123456"));
+        String accessToken = extractAccessToken(register("test@best.com", "12345678"));
 
         mockMvc.perform(get("/api/test/user")
                         .header("Authorization", "Bearer " + accessToken))
@@ -198,23 +198,15 @@ public class AuthControllerTests {
     }
 
     private RegisterRequest registerRequest(String email, String password) {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new RegisterRequest(email, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(email, password);
     }
 
     private RefreshTokenRequest refreshTokenRequest(String token) {
-        RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken(token);
-        return request;
+        return new RefreshTokenRequest(token);
     }
 
     private String toJson(Object obj) throws Exception {

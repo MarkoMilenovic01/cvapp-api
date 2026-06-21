@@ -1,9 +1,9 @@
 package com.best.cvapp;
 
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
-import com.best.cvapp.company.Company;
-import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.company.profile.Company;
+import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
@@ -309,7 +309,7 @@ public class CompanyControllerTests {
     private String registerUserAndGetToken(String email) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest(email, "123456"))))
+                        .content(toJson(registerRequest(email, "password"))))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -341,17 +341,11 @@ public class CompanyControllerTests {
     }
 
     private RegisterRequest registerRequest(String email, String password) {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new RegisterRequest(email, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(email, password);
     }
 
     private String companyRequestJson(String name, String description, String website, String industry) {

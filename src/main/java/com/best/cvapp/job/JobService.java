@@ -1,7 +1,7 @@
 package com.best.cvapp.job;
 
-import com.best.cvapp.company.Company;
-import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.company.profile.Company;
+import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.job.dto.JobRequest;
 import com.best.cvapp.job.dto.JobResponse;
 import com.best.cvapp.user.User;

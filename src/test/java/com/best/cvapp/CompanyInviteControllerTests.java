@@ -1,10 +1,10 @@
 package com.best.cvapp;
 
-import com.best.cvapp.admin.CompanyInvite;
-import com.best.cvapp.admin.CompanyInviteRepository;
-import com.best.cvapp.auth.dto.AcceptInviteRequest;
-import com.best.cvapp.auth.dto.LoginRequest;
-import com.best.cvapp.auth.dto.RegisterRequest;
+import com.best.cvapp.auth.companyinvite.CompanyInvite;
+import com.best.cvapp.auth.companyinvite.CompanyInviteRepository;
+import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,15 +32,15 @@ public class CompanyInviteControllerTests {
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private CompanyInviteRepository inviteRepository;
-    @MockitoBean
-    private JavaMailSender javaMailSender;
+    @MockitoBean private JavaMailSender javaMailSender;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private String adminToken;
 
     @BeforeEach
     void setUp() throws Exception {
-        jdbcTemplate.execute("TRUNCATE TABLE refresh_tokens, company_invites, users RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE company_invites RESTART IDENTITY CASCADE");
         adminToken = seedAdminAndGetToken();
     }
 
@@ -48,56 +48,67 @@ public class CompanyInviteControllerTests {
 
     @Test
     void shouldSendInviteSuccessfully() throws Exception {
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("company@test.com"))))
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void shouldFailSendInviteWithoutAdminToken() throws Exception {
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("company@test.com"))))
-                .andExpect(status().isUnauthorized());
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void shouldFailSendInviteWithUserToken() throws Exception {
-        String userToken = registerUserAndGetToken("user@test.com", "123456");
+        String userToken = registerUserAndGetToken("user@test.com", "password123");
 
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("company@test.com"))))
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void shouldFailSendInviteTwiceToSameEmail() throws Exception {
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("company@test.com"))))
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("company@test.com"))))
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void shouldFailSendInviteToAlreadyRegisteredEmail() throws Exception {
-        registerUserAndGetToken("existing@test.com", "123456");
+        registerUserAndGetToken("existing@test.com", "password123");
 
-        mockMvc.perform(post("/api/admin/invite-company")
+        mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(inviteRequest("existing@test.com"))))
+                        .content(toJson(inviteRequest("existing@test.com", "Test Company"))))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldAllowReInviteAfterExpiry() throws Exception {
+        saveInvite("company@test.com", false, LocalDateTime.now().minusHours(1));
+
+        mockMvc.perform(post("/api/auth/company-invites")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(inviteRequest("company@test.com", "Test Company"))))
+                .andExpect(status().isNoContent());
     }
 
     // --- Accept Invite ---
@@ -106,7 +117,7 @@ public class CompanyInviteControllerTests {
     void shouldAcceptInviteSuccessfully() throws Exception {
         String token = saveInvite("company@test.com", false, LocalDateTime.now().plusHours(48));
 
-        mockMvc.perform(post("/api/auth/accept-invite")
+        mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest(token, "password123"))))
                 .andExpect(status().isOk())
@@ -117,37 +128,37 @@ public class CompanyInviteControllerTests {
 
     @Test
     void shouldFailAcceptInviteWithInvalidToken() throws Exception {
-        mockMvc.perform(post("/api/auth/accept-invite")
+        mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest("invalid-token", "password123"))))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void shouldFailAcceptInviteAlreadyUsed() throws Exception {
         String token = saveInvite("company@test.com", true, LocalDateTime.now().plusHours(48));
 
-        mockMvc.perform(post("/api/auth/accept-invite")
+        mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest(token, "password123"))))
-                .andExpect(status().isGone());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void shouldFailAcceptInviteExpired() throws Exception {
         String token = saveInvite("company@test.com", false, LocalDateTime.now().minusHours(1));
 
-        mockMvc.perform(post("/api/auth/accept-invite")
+        mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest(token, "password123"))))
-                .andExpect(status().isGone());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void shouldLoginAfterAcceptingInvite() throws Exception {
         String token = saveInvite("company@test.com", false, LocalDateTime.now().plusHours(48));
 
-        mockMvc.perform(post("/api/auth/accept-invite")
+        mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest(token, "password123"))))
                 .andExpect(status().isOk());
@@ -163,9 +174,9 @@ public class CompanyInviteControllerTests {
 
     private String seedAdminAndGetToken() throws Exception {
         jdbcTemplate.execute("""
-            INSERT INTO users (email, password, role, provider, enabled)
-            VALUES ('admin@test.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', 'LOCAL', true)
-            """);
+                INSERT INTO users (email, password, role, provider, enabled)
+                VALUES ('admin@test.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', 'LOCAL', true)
+                """);
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -178,13 +189,9 @@ public class CompanyInviteControllerTests {
     }
 
     private String registerUserAndGetToken(String email, String password) throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(request)))
+                        .content(toJson(new RegisterRequest(email, password, password))))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -196,6 +203,7 @@ public class CompanyInviteControllerTests {
         String token = UUID.randomUUID().toString();
         CompanyInvite invite = CompanyInvite.builder()
                 .email(email)
+                .companyName("Test Company")
                 .token(token)
                 .used(used)
                 .expiresAt(expiresAt)
@@ -204,21 +212,18 @@ public class CompanyInviteControllerTests {
         return token;
     }
 
-    private record InviteRequestBody(String email) {}
-    private InviteRequestBody inviteRequest(String email) { return new InviteRequestBody(email); }
+    private record InviteRequestBody(String email, String companyName) {}
+
+    private InviteRequestBody inviteRequest(String email, String companyName) {
+        return new InviteRequestBody(email, companyName);
+    }
 
     private AcceptInviteRequest acceptInviteRequest(String token, String password) {
-        AcceptInviteRequest request = new AcceptInviteRequest();
-        request.setToken(token);
-        request.setPassword(password);
-        return request;
+        return new AcceptInviteRequest(token, password, password);
     }
 
     private LoginRequest loginRequest(String email, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(email);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(email, password);
     }
 
     private String toJson(Object obj) throws Exception {

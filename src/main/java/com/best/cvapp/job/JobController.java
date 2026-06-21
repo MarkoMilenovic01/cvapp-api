@@ -1,9 +1,6 @@
 package com.best.cvapp.job;
 
-import com.best.cvapp.job.dto.JobApplicationResponse;
-import com.best.cvapp.job.dto.JobRequest;
-import com.best.cvapp.job.dto.JobResponse;
-import com.best.cvapp.job.dto.UpdateApplicationStatusRequest;
+import com.best.cvapp.job.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +18,7 @@ public class JobController {
 
     private final JobService jobService;
     private final JobApplicationService jobApplicationService;
+    private final JobSearchService jobSearchService;
 
     // --- Company Job Management ---
 
@@ -72,6 +70,23 @@ public class JobController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<JobResponse> getActiveJobById(@PathVariable Long id) {
         return ResponseEntity.ok(jobService.getActiveJobById(id));
+    }
+
+
+    // ── NEW: Job Search ───────────────────────────────────────────────────────
+
+    /**
+     * GET /api/jobs/search?keyword=java&location=ljubljana&workMode=REMOTE&employmentType=INTERNSHIP&companyName=google
+     *
+     * All params optional — omitting all returns all active jobs.
+     * Supports standard pagination: ?page=0&size=10&sort=createdAt,desc
+     */
+    @GetMapping("/api/jobs/search")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Page<JobResponse>> searchJobs(
+            JobSearchRequest request,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+        return ResponseEntity.ok(jobSearchService.searchJobs(request, pageable));
     }
 
     // --- User Job Applications ---

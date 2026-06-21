@@ -1,6 +1,6 @@
 package com.best.cvapp.company.favorite;
 
-import com.best.cvapp.company.Company;
+import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.cv.CV;
 import jakarta.persistence.*;
 import lombok.*;

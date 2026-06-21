@@ -1,6 +1,7 @@
 package com.best.cvapp.admin;
 
-import com.best.cvapp.auth.dto.InviteRequest;
+import com.best.cvapp.auth.companyinvite.CompanyInviteService;
+import com.best.cvapp.auth.companyinvite.dto.InviteRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,5 @@ public class AdminController {
 
     private final CompanyInviteService companyInviteService;
 
-    @PostMapping("/invite-company")
-    public ResponseEntity<Void> inviteCompany(@RequestBody @Valid InviteRequest request) {
-        companyInviteService.sendInvite(request.getEmail());
-        return ResponseEntity.noContent().build();
-    }
+
 }

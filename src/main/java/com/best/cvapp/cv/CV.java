@@ -52,4 +52,17 @@ public class CV {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    // ── File uploads ──────────────────────────────────────────────────────────
+
+    @Column(name = "profile_photo_url")
+    private String profilePhotoUrl;
+
+    @Column(name = "profile_photo_id")
+    private String profilePhotoId;
+
+    @Column(name = "pdf_url")
+    private String pdfUrl;
+
+    @Column(name = "pdf_public_id")
+    private String pdfPublicId;
 }

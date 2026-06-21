@@ -1,8 +1,8 @@
 package com.best.cvapp.user;
 
 
-import com.best.cvapp.company.Company;
-import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.company.profile.Company;
+import com.best.cvapp.company.profile.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

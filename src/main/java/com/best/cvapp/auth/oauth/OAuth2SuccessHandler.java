@@ -1,8 +1,8 @@
 package com.best.cvapp.auth.oauth;
 
 
-import com.best.cvapp.auth.JwtService;
-import com.best.cvapp.auth.token.RefreshTokenService;
+import com.best.cvapp.auth.jwt.JwtService;
+import com.best.cvapp.auth.session.RefreshTokenService;
 import com.best.cvapp.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
