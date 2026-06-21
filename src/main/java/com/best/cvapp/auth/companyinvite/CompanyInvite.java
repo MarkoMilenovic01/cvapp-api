@@ -22,6 +22,9 @@ public class CompanyInvite {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private String companyName;
+
     @Column(nullable = false, unique = true)
     private String token;
 

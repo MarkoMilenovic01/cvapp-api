@@ -1,4 +1,4 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.profile;
 
 import com.best.cvapp.user.User;
 import jakarta.persistence.*;
@@ -31,9 +31,6 @@ public class Company {
     private String website;
     private String industry;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "photo_url")
     private String photoUrl;
@@ -41,5 +38,7 @@ public class Company {
     @Column(name = "photo_public_id")
     private String photoPublicId;
 
-
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 }

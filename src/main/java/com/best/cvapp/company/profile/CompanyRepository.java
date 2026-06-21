@@ -1,4 +1,4 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.profile;
 
 import com.best.cvapp.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -41,7 +41,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldUploadCvProfilePhotoSuccessfully() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         MockMultipartFile photo = mockImageFile();
@@ -57,7 +57,7 @@ public class FileUploadControllerTests {
     @Test
     void shouldFailCvPhotoUploadWithoutCv() throws Exception {
         // User has no CV yet
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
 
         MockMultipartFile photo = mockImageFile();
 
@@ -69,7 +69,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldFailCvPhotoUploadWithPdfFile() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         // Sending a PDF where an image is expected
@@ -85,7 +85,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldFailCvPhotoUploadWithNoFile() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         mockMvc.perform(multipart("/api/user/cv/photo")
@@ -104,7 +104,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldDeleteCvProfilePhoto() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         // Upload first
@@ -122,7 +122,7 @@ public class FileUploadControllerTests {
     @Test
     void shouldDeleteCvPhotoWhenNoneExists() throws Exception {
         // Should not throw — just a no-op
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         mockMvc.perform(delete("/api/user/cv/photo")
@@ -134,7 +134,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldUploadCvPdfSuccessfully() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         MockMultipartFile pdf = mockPdfFile();
@@ -149,7 +149,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldFailCvPdfUploadWithImageFile() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         // Sending an image where a PDF is expected
@@ -163,7 +163,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldFailCvPdfUploadWithoutCv() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
 
         mockMvc.perform(multipart("/api/user/cv/pdf")
                         .file(mockPdfFile())
@@ -180,7 +180,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldDeleteCvPdf() throws Exception {
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
         createCv(token);
 
         // Upload first
@@ -199,7 +199,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldUploadCompanyPhotoSuccessfully() throws Exception {
-        String token = registerCompanyAndGetToken("company@best.com", "123456");
+        String token = registerCompanyAndGetToken("company@best.com", "12345678");
 
         MockMultipartFile photo = mockImageFile();
 
@@ -220,7 +220,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldFailCompanyPhotoWithPdfFile() throws Exception {
-        String token = registerCompanyAndGetToken("company@best.com", "123456");
+        String token = registerCompanyAndGetToken("company@best.com", "12345678");
 
         MockMultipartFile wrongFile = new MockMultipartFile(
                 "file", "document.pdf", "application/pdf", "fake pdf content".getBytes()
@@ -234,7 +234,7 @@ public class FileUploadControllerTests {
 
     @Test
     void shouldDeleteCompanyPhoto() throws Exception {
-        String token = registerCompanyAndGetToken("company@best.com", "123456");
+        String token = registerCompanyAndGetToken("company@best.com", "12345678");
 
         // Upload first
         mockMvc.perform(multipart("/api/company/photo")
@@ -251,7 +251,7 @@ public class FileUploadControllerTests {
     @Test
     void shouldFailUserRoleAccessingCompanyEndpoint() throws Exception {
         // A USER role should not be able to upload a company photo
-        String token = registerAndGetToken("user@best.com", "123456");
+        String token = registerAndGetToken("user@best.com", "12345678");
 
         mockMvc.perform(multipart("/api/company/photo")
                         .file(mockImageFile())

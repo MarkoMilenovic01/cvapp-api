@@ -359,7 +359,7 @@ public class CVControllerTests {
     private String registerAndGetToken() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "123456"))))
+                        .content(toJson(registerRequest("test@best.com", "12345678"))))
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString())

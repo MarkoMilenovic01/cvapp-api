@@ -1,6 +1,6 @@
 package com.best.cvapp.company.history;
 
-import com.best.cvapp.company.Company;
+import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.cv.CV;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CvView {
+public class CVView {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

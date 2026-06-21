@@ -1,6 +1,6 @@
 package com.best.cvapp.job;
 
-import com.best.cvapp.company.Company;
+import com.best.cvapp.company.profile.Company;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

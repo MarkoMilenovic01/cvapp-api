@@ -1,4 +1,4 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.profile.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,5 +13,6 @@ public class CompanyResponse {
     private String description;
     private String website;
     private String industry;
+    private String photoUrl;
     private LocalDateTime createdAt;
 }

@@ -47,7 +47,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldSendResetEmailForExistingUser() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -73,7 +73,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldResetPasswordSuccessfully() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,7 +95,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldFailLoginWithOldPasswordAfterReset() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -111,7 +111,7 @@ public class PasswordResetControllerTests {
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("test@best.com", "123456"))))
+                        .content(toJson(loginRequest("test@best.com", "12345678"))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -125,7 +125,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldFailResetWithExpiredToken() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldFailResetWhenPasswordsDoNotMatch() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -165,7 +165,7 @@ public class PasswordResetControllerTests {
 
     @Test
     void shouldFailResetTokenUsedTwice() throws Exception {
-        register("test@best.com", "123456");
+        register("test@best.com", "12345678");
 
         mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)

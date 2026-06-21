@@ -1,6 +1,6 @@
 package com.best.cvapp.job;
 
-import com.best.cvapp.company.Company;
+import com.best.cvapp.company.profile.Company;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

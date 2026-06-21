@@ -1,4 +1,4 @@
-package com.best.cvapp.company;
+package com.best.cvapp.company.profile.dto;
 
 import lombok.Getter;
 import lombok.Setter;

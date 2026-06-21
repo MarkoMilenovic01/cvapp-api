@@ -1,10 +1,10 @@
 package com.best.cvapp.cv;
 
-import com.best.cvapp.company.Company;
-import com.best.cvapp.company.CompanyRepository;
+import com.best.cvapp.company.profile.Company;
+import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.company.favorite.FavoriteCVId;
 import com.best.cvapp.company.favorite.FavoriteCVRepository;
-import com.best.cvapp.company.favorite.CvSummaryResponse;
+import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class CVSearchService {
      * Called by COMPANY role users.
      * Returns a paginated list of CvSummaryResponse with isFavorite flag.
      */
-    public Page<CvSummaryResponse> searchCVs(CVSearchRequest request, Pageable pageable) {
+    public Page<CompanyCVSummaryResponse> searchCVs(CVSearchRequest request, Pageable pageable) {
         Company company = getAuthenticatedCompany();
 
         CVSpecification spec = new CVSpecification(request);
@@ -38,7 +38,7 @@ public class CVSearchService {
             boolean isFavorite = favoriteCVRepository.existsById(
                     new FavoriteCVId(company.getId(), cv.getId())
             );
-            return new CvSummaryResponse(
+            return new CompanyCVSummaryResponse(
                     cv.getId(),
                     cv.getFirstName(),
                     cv.getLastName(),
