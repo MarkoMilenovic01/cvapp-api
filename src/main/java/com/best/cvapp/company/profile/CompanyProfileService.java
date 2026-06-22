@@ -29,10 +29,10 @@ public class CompanyProfileService {
     public CompanyResponse updateMyProfile(CompanyRequest request) {
         Company company = getAuthenticatedCompany();
 
-        company.setName(request.getName());
-        company.setDescription(request.getDescription());
-        company.setWebsite(request.getWebsite());
-        company.setIndustry(request.getIndustry());
+        company.setName(request.name());
+        company.setDescription(request.description());
+        company.setWebsite(request.website());
+        company.setIndustry(request.industry());
 
         Company savedCompany = companyRepository.save(company);
 

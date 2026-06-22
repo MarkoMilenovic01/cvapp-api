@@ -1,6 +1,5 @@
 package com.best.cvapp.auth.oauth;
 
-import com.best.cvapp.user.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;

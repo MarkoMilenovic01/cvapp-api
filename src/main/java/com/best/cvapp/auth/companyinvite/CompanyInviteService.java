@@ -7,7 +7,7 @@ import com.best.cvapp.auth.session.AuthSessionService;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.email.EmailService;
-import com.best.cvapp.user.AuthProvider;
+import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;

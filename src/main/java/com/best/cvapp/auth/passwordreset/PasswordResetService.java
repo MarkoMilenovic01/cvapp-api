@@ -3,7 +3,7 @@ package com.best.cvapp.auth.passwordreset;
 import com.best.cvapp.auth.passwordreset.dto.ForgotPasswordRequest;
 import com.best.cvapp.auth.passwordreset.dto.PasswordResetRequest;
 import com.best.cvapp.email.EmailService;
-import com.best.cvapp.user.AuthProvider;
+import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;

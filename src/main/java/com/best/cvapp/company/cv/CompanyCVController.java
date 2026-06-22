@@ -1,8 +1,8 @@
 package com.best.cvapp.company.cv;
 
+import com.best.cvapp.company.cv.dto.CVSearchRequest;
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
-import com.best.cvapp.cv.CVResponse;
-import com.best.cvapp.cv.CVSearchRequest;
+import com.best.cvapp.cv.profile.CVResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +27,10 @@ public class CompanyCVController {
         return ResponseEntity.ok(companyCVService.getAllCVs(pageable));
     }
 
-
+    @GetMapping("/{id}")
+    public ResponseEntity<CVResponse> getCVById(@PathVariable Long id) {
+        return ResponseEntity.ok(companyCVService.getCVById(id));
+    }
 
     @GetMapping("/search")
     public ResponseEntity<Page<CompanyCVSummaryResponse>> searchCVs(
@@ -35,11 +38,5 @@ public class CompanyCVController {
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
     ) {
         return ResponseEntity.ok(companyCVService.searchCVs(request, pageable));
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<CVResponse> getCVById(@PathVariable Long id) {
-        return ResponseEntity.ok(companyCVService.getCVById(id));
     }
 }

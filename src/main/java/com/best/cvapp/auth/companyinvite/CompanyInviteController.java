@@ -3,6 +3,7 @@ package com.best.cvapp.auth.companyinvite;
 import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
 import com.best.cvapp.auth.companyinvite.dto.InviteRequest;
 import com.best.cvapp.auth.session.dto.AuthResponse;
+import com.best.cvapp.shared.ratelimit.RateLimited;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ public class CompanyInviteController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @RateLimited(requests = 5, seconds = 60)
     public ResponseEntity<Void> sendInvite(@Valid @RequestBody InviteRequest request) {
         companyInviteService.sendInvite(request);
         return ResponseEntity.noContent().build();

@@ -1,17 +1,16 @@
 package com.best.cvapp.company.cv;
 
+import com.best.cvapp.company.cv.dto.CVSearchRequest;
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
 import com.best.cvapp.company.favorite.FavoriteCVId;
 import com.best.cvapp.company.favorite.FavoriteCVRepository;
 import com.best.cvapp.company.history.CVHistoryService;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyProfileService;
-import com.best.cvapp.cv.CV;
-import com.best.cvapp.cv.CVRepository;
-import com.best.cvapp.cv.CVResponse;
-import com.best.cvapp.cv.CVSearchRequest;
-import com.best.cvapp.cv.CVSearchService;
-import com.best.cvapp.cv.CVService;
+import com.best.cvapp.cv.profile.CV;
+import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.profile.CVResponse;
+import com.best.cvapp.cv.profile.CVService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

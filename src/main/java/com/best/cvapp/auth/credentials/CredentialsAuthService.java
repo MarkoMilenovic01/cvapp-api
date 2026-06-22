@@ -4,7 +4,8 @@ import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.best.cvapp.auth.session.AuthSessionService;
 import com.best.cvapp.auth.session.dto.AuthResponse;
-import com.best.cvapp.user.AuthProvider;
+import com.best.cvapp.auth.oauth.AuthProvider;
+import com.best.cvapp.shared.ratelimit.RateLimited;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -29,6 +30,7 @@ public class CredentialsAuthService {
     private final AuthSessionService authSessionService;
 
     @Transactional
+    @RateLimited(requests = 500, seconds = 60)
     public AuthResponse register(RegisterRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
@@ -61,6 +63,7 @@ public class CredentialsAuthService {
     }
 
     @Transactional
+    @RateLimited(requests = 500, seconds = 60)
     public AuthResponse login(LoginRequest request) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
