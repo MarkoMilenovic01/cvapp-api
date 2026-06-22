@@ -30,7 +30,7 @@ public class CredentialsAuthService {
     private final AuthSessionService authSessionService;
 
     @Transactional
-    @RateLimited(requests = 50, seconds = 60)
+    @RateLimited(requests = 500, seconds = 60)
     public AuthResponse register(RegisterRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
@@ -63,7 +63,7 @@ public class CredentialsAuthService {
     }
 
     @Transactional
-    @RateLimited(requests = 50, seconds = 60)
+    @RateLimited(requests = 500, seconds = 60)
     public AuthResponse login(LoginRequest request) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
