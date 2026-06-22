@@ -2,7 +2,7 @@
 
 CVApp is a Spring Boot backend application for managing CVs, companies, job postings, and job applications.
 
-The system supports three main roles:
+The platform supports three main roles:
 
 | Role      | Description                                                                    |
 | --------- | ------------------------------------------------------------------------------ |
@@ -74,14 +74,16 @@ The system supports three main roles:
 * Java 25
 * Spring Boot
 * Spring Security
-* JWT
 * Spring Data JPA
 * PostgreSQL
+* JWT
 * Maven
-* Cloudinary for file storage
-* Java Mail Sender for emails
+* Docker
+* Cloudinary
+* Java Mail Sender
 * Google OAuth2
-* JUnit and MockMvc for testing
+* JUnit
+* MockMvc
 
 ---
 
@@ -130,39 +132,40 @@ src/main/java/com/best/cvapp
 Before running the application, install:
 
 * Java 25
+* Docker
+* Docker Compose
+* Make
 * Maven, or use the included Maven wrapper
-* PostgreSQL
-* Docker, optional
 
-Check your Java version:
+Check Java version:
 
 ```bash
 java --version
 ```
 
-Check Maven:
+Check Docker:
 
 ```bash
-mvn --version
+docker --version
 ```
 
-If you use the Maven wrapper:
+Check Docker Compose:
 
 ```bash
-./mvnw --version
+docker compose version
 ```
 
-On Windows:
+Check Make:
 
 ```bash
-mvnw.cmd --version
+make --version
 ```
 
 ---
 
 ## Environment Variables
 
-The application needs database, JWT, email, OAuth, and storage configuration.
+The application requires database, JWT, email, OAuth, and storage configuration.
 
 Example environment variables:
 
@@ -193,7 +196,9 @@ Make sure the variable names match your `application.properties` or `application
 
 ## Database Setup
 
-Create a PostgreSQL database:
+The application uses PostgreSQL.
+
+Create a database manually:
 
 ```sql
 CREATE DATABASE cvapp;
@@ -207,7 +212,11 @@ spring.datasource.username=postgres
 spring.datasource.password=postgres
 ```
 
-If you use a different database name, username, or password, update your configuration.
+The easiest way to start the database is with the provided Makefile:
+
+```bash
+make db-up
+```
 
 ---
 
@@ -220,18 +229,16 @@ git clone https://github.com/your-username/cvapp.git
 cd cvapp
 ```
 
-Start PostgreSQL locally.
-
-Then run the application:
+Start the database:
 
 ```bash
-./mvnw spring-boot:run
+make db-up
 ```
 
-On Windows:
+Run the backend:
 
 ```bash
-mvnw.cmd spring-boot:run
+make run
 ```
 
 The backend should start on:
@@ -242,24 +249,209 @@ http://localhost:8080
 
 ---
 
-## Running with Maven
+## Makefile Commands
+
+This project includes a `Makefile` with shortcuts for common development tasks.
+
+### Run the Application
+
+```bash
+make run
+```
+
+Equivalent command:
+
+```bash
+./mvnw spring-boot:run
+```
+
+---
+
+### Build the Application
+
+```bash
+make build
+```
+
+Equivalent command:
+
+```bash
+./mvnw clean install -DskipTests
+```
+
+---
+
+### Run Tests
+
+```bash
+make test
+```
+
+Equivalent command:
+
+```bash
+./mvnw test
+```
+
+---
+
+### Start the Database
+
+```bash
+make db-up
+```
+
+Equivalent command:
+
+```bash
+docker-compose up -d
+```
+
+---
+
+### Stop the Database
+
+```bash
+make db-down
+```
+
+Equivalent command:
+
+```bash
+docker-compose down
+```
+
+---
+
+### Reset the Database
+
+```bash
+make db-reset
+```
+
+This stops the database, removes the database volume, and starts it again.
+
+Equivalent command:
+
+```bash
+docker-compose down -v && docker-compose up -d
+```
+
+---
+
+### Clean Build Files
+
+```bash
+make clean
+```
+
+Equivalent command:
+
+```bash
+./mvnw clean
+```
+
+---
+
+## Recommended Development Flow
+
+Start the database:
+
+```bash
+make db-up
+```
+
+Run the backend:
+
+```bash
+make run
+```
+
+Run tests:
+
+```bash
+make test
+```
+
+Reset the database when needed:
+
+```bash
+make db-reset
+```
+
+Stop the database:
+
+```bash
+make db-down
+```
+
+---
+
+## Makefile
+
+```makefile
+run:
+	./mvnw spring-boot:run
+
+build:
+	./mvnw clean install -DskipTests
+
+test:
+	./mvnw test
+
+db-up:
+	docker-compose up -d
+
+db-down:
+	docker-compose down
+
+db-reset:
+	docker-compose down -v && docker-compose up -d
+
+clean:
+	./mvnw clean
+```
+
+On Windows, these commands work best through Git Bash, WSL, or another terminal where `make` is available.
+
+---
+
+## Running Without Make
+
+Run the application:
+
+```bash
+./mvnw spring-boot:run
+```
 
 Build the project:
 
 ```bash
-./mvnw clean package
+./mvnw clean install -DskipTests
 ```
 
-Run the generated JAR:
+Run tests:
 
 ```bash
-java -jar target/*.jar
+./mvnw test
 ```
 
-On Windows PowerShell, use:
+Start Docker services:
 
-```powershell
-java -jar target\your-app-name.jar
+```bash
+docker-compose up -d
+```
+
+Stop Docker services:
+
+```bash
+docker-compose down
+```
+
+Reset Docker services and volumes:
+
+```bash
+docker-compose down -v && docker-compose up -d
 ```
 
 ---
@@ -269,7 +461,7 @@ java -jar target\your-app-name.jar
 Run all tests:
 
 ```bash
-./mvnw test
+make test
 ```
 
 Run a specific test class:
@@ -278,15 +470,25 @@ Run a specific test class:
 ./mvnw -Dtest=CredentialsAuthControllerTest test
 ```
 
+Examples:
+
+```bash
+./mvnw -Dtest=AdminUserControllerTest test
+./mvnw -Dtest=AdminCompanyControllerTest test
+./mvnw -Dtest=AdminJobControllerTest test
+./mvnw -Dtest=CredentialsAuthControllerTest test
+```
+
 Run tests from IntelliJ:
 
-1. Open the project in IntelliJ
-2. Right-click the `test` folder
-3. Click `Run 'All Tests'`
+1. Open the project in IntelliJ IDEA
+2. Open the `src/test` folder
+3. Right-click the test package or test folder
+4. Click `Run Tests`
 
 ---
 
-## Running with Docker
+## Docker
 
 Build the Docker image:
 
@@ -306,13 +508,13 @@ docker run -p 8080:8080 \
   cvapp-backend
 ```
 
-On Linux, `host.docker.internal` may not work by default. In that case, use a Docker network or run PostgreSQL inside Docker Compose.
+On Linux, `host.docker.internal` may not work by default. In that case, use Docker Compose or a shared Docker network.
 
 ---
 
 ## Example Docker Compose
 
-You can create a `docker-compose.yml` like this:
+Example `docker-compose.yml`:
 
 ```yaml
 services:
@@ -346,22 +548,22 @@ volumes:
   cvapp-postgres-data:
 ```
 
-Run:
+Start services:
 
 ```bash
-docker compose up --build
+make db-up
 ```
 
-Stop:
+Stop services:
 
 ```bash
-docker compose down
+make db-down
 ```
 
-Stop and delete database volume:
+Reset services and database volume:
 
 ```bash
-docker compose down -v
+make db-reset
 ```
 
 ---
@@ -376,7 +578,7 @@ http://localhost:8080
 
 ---
 
-### Auth API
+## Auth API
 
 | Method | Endpoint                           | Description            | Access |
 | ------ | ---------------------------------- | ---------------------- | ------ |
@@ -391,7 +593,7 @@ http://localhost:8080
 
 ---
 
-### User CV API
+## User CV API
 
 | Method   | Endpoint                       | Description             | Access |
 | -------- | ------------------------------ | ----------------------- | ------ |
@@ -417,7 +619,7 @@ http://localhost:8080
 
 ---
 
-### Job API
+## Job API
 
 | Method   | Endpoint                                    | Description          | Access |
 | -------- | ------------------------------------------- | -------------------- | ------ |
@@ -430,7 +632,7 @@ http://localhost:8080
 
 ---
 
-### Company API
+## Company API
 
 | Method   | Endpoint                                                | Description               | Access  |
 | -------- | ------------------------------------------------------- | ------------------------- | ------- |
@@ -455,7 +657,7 @@ http://localhost:8080
 
 ---
 
-### Admin API
+## Admin API
 
 | Method   | Endpoint                       | Description              | Access |
 | -------- | ------------------------------ | ------------------------ | ------ |
@@ -492,7 +694,7 @@ Content-Type: application/json
 }
 ```
 
-Response:
+Example response:
 
 ```json
 {
@@ -518,7 +720,7 @@ Content-Type: application/json
 }
 ```
 
-Response:
+Example response:
 
 ```json
 {
@@ -598,40 +800,6 @@ WITHDRAWN
 | `409 Conflict`          | Resource already exists or duplicate action |
 | `410 Gone`              | Token expired or already used               |
 | `429 Too Many Requests` | Rate limit exceeded                         |
-
----
-
-## Useful Development Commands
-
-Clean and build:
-
-```bash
-./mvnw clean package
-```
-
-Run application:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Run tests:
-
-```bash
-./mvnw test
-```
-
-Skip tests while building:
-
-```bash
-./mvnw clean package -DskipTests
-```
-
-Run one test class:
-
-```bash
-./mvnw -Dtest=AdminUserControllerTest test
-```
 
 ---
 
