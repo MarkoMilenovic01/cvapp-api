@@ -34,6 +34,7 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    @Transactional
     public RefreshToken validateRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
@@ -45,6 +46,7 @@ public class RefreshTokenService {
 
         return refreshToken;
     }
+
 
     @Transactional
     public void deleteByUser(User user) {

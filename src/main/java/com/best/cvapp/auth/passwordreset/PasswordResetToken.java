@@ -1,6 +1,7 @@
 package com.best.cvapp.auth.passwordreset;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -19,6 +20,7 @@ public class PasswordResetToken {
     private String email;
 
     @Column(nullable = false, unique = true)
+    @Size(max = 36)
     private String token;
 
     @Column(nullable = false)

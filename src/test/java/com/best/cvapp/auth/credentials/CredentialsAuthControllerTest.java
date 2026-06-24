@@ -194,6 +194,53 @@
                     .andExpect(status().isNotFound());
         }
 
+        @Test
+        void shouldRejectUserEndpointWithoutToken() throws Exception {
+            mockMvc.perform(get("/api/user/cv"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void shouldRejectUserEndpointWithMalformedToken() throws Exception {
+            mockMvc.perform(get("/api/user/cv")
+                            .header("Authorization", "Bearer invalid-token"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void shouldRejectUserEndpointWithWrongAuthScheme() throws Exception {
+            mockMvc.perform(get("/api/user/cv")
+                            .header("Authorization", "Basic some-random-value"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void shouldRejectCompanyEndpointWithUserRole() throws Exception {
+            String userToken = extractAccessToken(register("user@best.com", "Test@1234"));
+
+            mockMvc.perform(get("/api/company/me")
+                            .header("Authorization", "Bearer " + userToken))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldRejectAdminEndpointWithUserRole() throws Exception {
+            String userToken = extractAccessToken(register("user@best.com", "Test@1234"));
+
+            mockMvc.perform(get("/api/admin/users")
+                            .header("Authorization", "Bearer " + userToken))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void shouldAllowUserEndpointWithValidUserToken() throws Exception {
+            String userToken = extractAccessToken(register("user@best.com", "Test@1234"));
+
+            mockMvc.perform(get("/api/user/cv")
+                            .header("Authorization", "Bearer " + userToken))
+                    .andExpect(status().isNotFound());
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────────
 
         private MvcResult register(String email, String password) throws Exception {
