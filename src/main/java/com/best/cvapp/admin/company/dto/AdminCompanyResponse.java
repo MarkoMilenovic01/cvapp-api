@@ -1,4 +1,4 @@
-package com.best.cvapp.admin.company;
+package com.best.cvapp.admin.company.dto;
 
 import java.time.LocalDateTime;
 

@@ -1,0 +1,8 @@
+Auth
+
+Credentials
+Issue 1 : rate limiting on register/login
+Issue 2 : Email verification for registration
+Issue 3 : 404 User not found when failed auth instead of 401 Invalid Credentials
+Issue 4 : Registration leaks auth provider
+Issue 5 : Disabled behaviour for user

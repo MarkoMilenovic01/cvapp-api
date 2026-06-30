@@ -10,4 +10,5 @@ import java.util.List;
 public interface FavoriteCVRepository extends JpaRepository<FavoriteCV, FavoriteCVId> {
     List<FavoriteCV> findByCompany(Company company);
     boolean existsById(FavoriteCVId id);
+    void deleteByCompany(Company company);
 }

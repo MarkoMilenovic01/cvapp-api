@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.company;
 
+import com.best.cvapp.admin.company.dto.AdminCompanyResponse;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
 import lombok.RequiredArgsConstructor;

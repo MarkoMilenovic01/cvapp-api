@@ -16,4 +16,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     List<JobApplication> findByJobOrderByAppliedAtDesc(Job job);
 
     Optional<JobApplication> findByIdAndUser(Long id, User user);
+
+    void deleteByJob(Job job);
 }

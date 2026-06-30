@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.company;
 
+import com.best.cvapp.admin.company.dto.AdminCompanyResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
