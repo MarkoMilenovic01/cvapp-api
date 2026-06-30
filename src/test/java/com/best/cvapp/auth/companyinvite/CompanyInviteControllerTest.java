@@ -3,6 +3,9 @@ package com.best.cvapp.auth.companyinvite;
 import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.user.Role;
+import com.best.cvapp.user.User;
+import com.best.cvapp.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,7 @@ public class CompanyInviteControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private CompanyInviteRepository inviteRepository;
+    @Autowired private UserRepository userRepository;
     @MockitoBean private JavaMailSender javaMailSender;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -171,19 +175,39 @@ public class CompanyInviteControllerTest {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String seedAdminAndGetToken() throws Exception {
-        jdbcTemplate.update(
-                "INSERT INTO users (email, password, role, provider, enabled) VALUES (?, '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', 'LOCAL', true)",
-                "admin@test.com"
-        );
-
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new LoginRequest("admin@test.com", "password"))))
-                .andExpect(status().isOk())
-                .andReturn();
+                        .content("""
+                            {
+                              "email": "admin@test.com",
+                              "password": "Password123!",
+                              "confirmPassword": "Password123!"
+                            }
+                            """))
+                .andExpect(status().isOk());
 
-        return objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken").asText();
+        User admin = userRepository.findByEmail("admin@test.com")
+                .orElseThrow();
+
+        admin.setRole(Role.ADMIN);
+        userRepository.save(admin);
+
+        String response = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "email": "admin@test.com",
+                              "password": "Password123!"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readTree(response)
+                .get("accessToken")
+                .asText();
     }
 
     private String registerUserAndGetToken(String email, String password) throws Exception {

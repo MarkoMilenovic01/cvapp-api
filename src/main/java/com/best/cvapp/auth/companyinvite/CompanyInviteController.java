@@ -19,7 +19,7 @@ public class CompanyInviteController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @RateLimited(requests = 5, seconds = 60)
+    @RateLimited(requests = 50, seconds = 60)
     public ResponseEntity<Void> sendInvite(@Valid @RequestBody InviteRequest request) {
         companyInviteService.sendInvite(request);
         return ResponseEntity.noContent().build();
