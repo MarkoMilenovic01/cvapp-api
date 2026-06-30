@@ -5,7 +5,6 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,14 +15,38 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: cvapp_db
+          POSTGRES_DB: cvapp_test_db
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d cvapp_db"
+          --health-cmd "pg_isready -U postgres -d cvapp_test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/cvapp_test_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      JWT_SECRET: testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest
+      JWT_EXPIRATION: 900000
+      JWT_REFRESH_EXPIRATION: 604800000
+
+      MAIL_USERNAME: test
+      MAIL_PASSWORD: test
+
+      GOOGLE_CLIENT_ID: test
+      GOOGLE_CLIENT_SECRET: test
+
+      CLOUDINARY_CLOUD_NAME: test
+      CLOUDINARY_API_KEY: test
+      CLOUDINARY_API_SECRET: test
+
+      FRONTEND_URL: http://localhost:5173
+      PASSWORD_RESET_EXPIRATION_HOURS: 1
+      INVITE_EXPIRATION_HOURS: 48
 
     steps:
       - name: Checkout repository
@@ -40,30 +63,4 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Run tests
-        run: make test
-        env:
-          SPRING_PROFILES_ACTIVE: ci
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/cvapp_db
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: postgres
-
-          # JWT
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRATION: 900000
-          JWT_REFRESH_EXPIRATION: 604800000
-
-          # Mail
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-
-          # Google OAuth2
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-
-          # Cloudinary
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-
-          # Frontend
-          FRONTEND_URL: http://localhost:3000
+        run: ./mvnw clean test

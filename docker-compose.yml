@@ -21,7 +21,10 @@ services:
     container_name: cvapp
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cvapp_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
