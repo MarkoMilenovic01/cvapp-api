@@ -1,9 +1,9 @@
 package com.best.cvapp.job.company;
 
-import com.best.cvapp.job.application.JobApplicationResponse;
-import com.best.cvapp.job.application.UpdateApplicationStatusRequest;
-import com.best.cvapp.job.core.JobRequest;
-import com.best.cvapp.job.core.JobResponse;
+import com.best.cvapp.job.application.dto.JobApplicationResponse;
+import com.best.cvapp.job.application.dto.UpdateApplicationStatusRequest;
+import com.best.cvapp.job.core.dto.JobRequest;
+import com.best.cvapp.job.core.dto.JobResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

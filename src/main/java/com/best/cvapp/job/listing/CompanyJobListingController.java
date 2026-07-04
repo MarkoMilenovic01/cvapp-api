@@ -10,21 +10,20 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/jobs")
+@RequestMapping("/api/companies/{companyId}/jobs")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('USER')")
-public class JobListingController {
+public class CompanyJobListingController {
 
     private final JobListingService jobListingService;
 
     @GetMapping
-    public ResponseEntity<Page<JobResponse>> getAllActiveJobs(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(jobListingService.getAllActiveJobs(pageable));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<JobResponse> getActiveJobById(@PathVariable Long id) {
-        return ResponseEntity.ok(jobListingService.getActiveJobById(id));
+    public ResponseEntity<Page<JobResponse>> getActiveJobsByCompany(
+            @PathVariable Long companyId,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                jobListingService.getActiveJobsByCompany(companyId, pageable)
+        );
     }
 }

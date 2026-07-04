@@ -1,4 +1,7 @@
-package com.best.cvapp.job.core;
+package com.best.cvapp.job.core.dto;
+
+import com.best.cvapp.job.core.EmploymentType;
+import com.best.cvapp.job.core.WorkMode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -1,6 +1,7 @@
 package com.best.cvapp.job.application;
 
 import com.best.cvapp.cv.profile.CV;
+import com.best.cvapp.job.application.dto.JobApplicationResponse;
 import org.springframework.stereotype.Component;
 
 @Component

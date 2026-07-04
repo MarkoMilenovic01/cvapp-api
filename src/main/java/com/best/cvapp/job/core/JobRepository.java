@@ -22,4 +22,6 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
     long countByActiveTrue();
 
     List<Job> findByCompany(Company company);
+
+    Page<Job> findByCompanyAndActiveTrue(Company company, Pageable pageable);
 }

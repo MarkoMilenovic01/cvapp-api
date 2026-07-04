@@ -2,6 +2,7 @@ package com.best.cvapp.job.application;
 
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.job.application.dto.JobApplicationResponse;
 import com.best.cvapp.job.core.ApplicationStatus;
 import com.best.cvapp.job.core.Job;
 import com.best.cvapp.job.core.JobRepository;

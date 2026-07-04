@@ -1,5 +1,6 @@
 package com.best.cvapp.job.application;
 
+import com.best.cvapp.job.application.dto.JobApplicationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

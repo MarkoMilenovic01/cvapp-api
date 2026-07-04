@@ -1,5 +1,6 @@
 package com.best.cvapp.job.core;
 
+import com.best.cvapp.job.core.dto.JobResponse;
 import org.springframework.stereotype.Component;
 
 @Component

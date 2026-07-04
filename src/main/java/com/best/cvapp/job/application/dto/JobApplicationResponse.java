@@ -1,4 +1,4 @@
-package com.best.cvapp.job.application;
+package com.best.cvapp.job.application.dto;
 
 import com.best.cvapp.job.core.ApplicationStatus;
 

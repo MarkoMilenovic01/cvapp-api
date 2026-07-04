@@ -2,7 +2,7 @@ package com.best.cvapp.job.search;
 
 import com.best.cvapp.job.core.JobMapper;
 import com.best.cvapp.job.core.JobRepository;
-import com.best.cvapp.job.core.JobResponse;
+import com.best.cvapp.job.core.dto.JobResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
