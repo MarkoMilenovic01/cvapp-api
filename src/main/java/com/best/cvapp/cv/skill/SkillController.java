@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.skill;
 
+import com.best.cvapp.cv.skill.dto.SkillRequest;
+import com.best.cvapp.cv.skill.dto.SkillResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

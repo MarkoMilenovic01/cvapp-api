@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.profile;
 
+import com.best.cvapp.cv.profile.dto.CVRequest;
+import com.best.cvapp.cv.profile.dto.CVResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

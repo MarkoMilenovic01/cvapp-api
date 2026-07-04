@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.education;
 
+import com.best.cvapp.cv.education.dto.EducationRequest;
+import com.best.cvapp.cv.education.dto.EducationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

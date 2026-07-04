@@ -2,7 +2,7 @@ package com.best.cvapp.company.cv;
 
 import com.best.cvapp.company.cv.dto.CVSearchRequest;
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
-import com.best.cvapp.cv.profile.CVResponse;
+import com.best.cvapp.cv.profile.dto.CVResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

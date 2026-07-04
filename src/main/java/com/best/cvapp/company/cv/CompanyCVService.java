@@ -9,7 +9,7 @@ import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyProfileService;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
-import com.best.cvapp.cv.profile.CVResponse;
+import com.best.cvapp.cv.profile.dto.CVResponse;
 import com.best.cvapp.cv.profile.CVService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

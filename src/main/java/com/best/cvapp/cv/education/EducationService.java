@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.education;
 
+import com.best.cvapp.cv.education.dto.EducationRequest;
+import com.best.cvapp.cv.education.dto.EducationResponse;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.user.User;

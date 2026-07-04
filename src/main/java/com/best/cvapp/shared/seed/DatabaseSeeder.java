@@ -41,14 +41,14 @@ public class DatabaseSeeder implements CommandLineRunner {
     public void run(String... args) {
 
         // ── Users ─────────────────────────────────────────────────────────────
-        User admin      = seedUser("admin@cvapp.com",    "password", Role.ADMIN);
-        User companyU1  = seedUser("company@cvapp.com",  "password", Role.COMPANY);
-        User companyU2  = seedUser("company2@cvapp.com", "password", Role.COMPANY);
-        User companyU3  = seedUser("company3@cvapp.com", "password", Role.COMPANY);
-        User user1      = seedUser("user@cvapp.com",     "password", Role.USER);
-        User user2      = seedUser("user2@cvapp.com",    "password", Role.USER);
-        User user3      = seedUser("user3@cvapp.com",    "password", Role.USER);
-        User user4      = seedUser("user4@cvapp.com",    "password", Role.USER);
+        User admin      = seedUser("admin@cvapp.com",    "Password123!", Role.ADMIN);
+        User companyU1  = seedUser("company@cvapp.com",  "Password123!", Role.COMPANY);
+        User companyU2  = seedUser("company2@cvapp.com", "Password123!", Role.COMPANY);
+        User companyU3  = seedUser("company3@cvapp.com", "Password123!", Role.COMPANY);
+        User user1      = seedUser("user@cvapp.com",     "Password123!", Role.USER);
+        User user2      = seedUser("user2@cvapp.com",    "Password123!", Role.USER);
+        User user3      = seedUser("user3@cvapp.com",    "Password123!", Role.USER);
+        User user4      = seedUser("user4@cvapp.com",    "Password123!", Role.USER);
 
         // ── Companies ─────────────────────────────────────────────────────────
         Company bestNis = seedCompany(companyU1,

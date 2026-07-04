@@ -2,6 +2,8 @@ package com.best.cvapp.cv.skill;
 
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.skill.dto.SkillRequest;
+import com.best.cvapp.cv.skill.dto.SkillResponse;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;

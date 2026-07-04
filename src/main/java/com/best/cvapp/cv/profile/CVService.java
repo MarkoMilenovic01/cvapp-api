@@ -1,11 +1,13 @@
 package com.best.cvapp.cv.profile;
 
 import com.best.cvapp.cv.education.Education;
-import com.best.cvapp.cv.education.EducationResponse;
+import com.best.cvapp.cv.education.dto.EducationResponse;
 import com.best.cvapp.cv.experience.Experience;
-import com.best.cvapp.cv.experience.ExperienceResponse;
+import com.best.cvapp.cv.experience.dto.ExperienceResponse;
+import com.best.cvapp.cv.profile.dto.CVRequest;
+import com.best.cvapp.cv.profile.dto.CVResponse;
 import com.best.cvapp.cv.skill.Skill;
-import com.best.cvapp.cv.skill.SkillResponse;
+import com.best.cvapp.cv.skill.dto.SkillResponse;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +49,7 @@ public class CVService {
         cv.setSummary(request.getSummary());
         cv.setLinkedinUrl(request.getLinkedinUrl());
         cv.setGithubUrl(request.getGithubUrl());
+
 
         // Update education
         cv.getEducation().clear();
@@ -152,7 +155,9 @@ public class CVService {
                 education,
                 experience,
                 skills,
-                cv.getCreatedAt()
+                cv.getCreatedAt(),
+                cv.getProfilePhotoUrl(),
+                cv.getPdfUrl()
         );
     }
 }

@@ -1,4 +1,4 @@
-package com.best.cvapp.cv.education;
+package com.best.cvapp.cv.experience.dto;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,10 +7,10 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-public class EducationRequest {
-    private String institution;
-    private String degree;
-    private String fieldOfStudy;
+public class ExperienceRequest {
+    private String companyName;
+    private String position;
+    private String description;
     private LocalDate startDate;
     private LocalDate endDate;
     private boolean current;

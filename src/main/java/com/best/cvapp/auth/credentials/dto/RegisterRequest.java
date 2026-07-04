@@ -19,6 +19,7 @@ public record RegisterRequest(
 
         @NotBlank(message = "Confirm password is required")
         @Size(min = 8, max = 128, message = "Confirm password must be between 8 and 128 characters")
+        @ValidPassword
         String confirmPassword
 ) {
 }

@@ -1,8 +1,8 @@
-package com.best.cvapp.cv.profile;
+package com.best.cvapp.cv.profile.dto;
 
-import com.best.cvapp.cv.education.EducationRequest;
-import com.best.cvapp.cv.experience.ExperienceRequest;
-import com.best.cvapp.cv.skill.SkillRequest;
+import com.best.cvapp.cv.education.dto.EducationRequest;
+import com.best.cvapp.cv.experience.dto.ExperienceRequest;
+import com.best.cvapp.cv.skill.dto.SkillRequest;
 import lombok.Getter;
 import lombok.Setter;
 

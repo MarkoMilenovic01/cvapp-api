@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.experience;
 
+import com.best.cvapp.cv.experience.dto.ExperienceRequest;
+import com.best.cvapp.cv.experience.dto.ExperienceResponse;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.user.User;

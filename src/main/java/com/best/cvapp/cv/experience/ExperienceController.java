@@ -1,5 +1,7 @@
 package com.best.cvapp.cv.experience;
 
+import com.best.cvapp.cv.experience.dto.ExperienceRequest;
+import com.best.cvapp.cv.experience.dto.ExperienceResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

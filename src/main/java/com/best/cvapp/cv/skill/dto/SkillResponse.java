@@ -1,4 +1,4 @@
-package com.best.cvapp.cv.skill;
+package com.best.cvapp.cv.skill.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
