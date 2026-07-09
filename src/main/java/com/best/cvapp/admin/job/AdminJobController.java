@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.job;
 
+import com.best.cvapp.admin.job.dto.AdminJobResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,12 +1,12 @@
 package com.best.cvapp.auth.session;
 
+import com.best.cvapp.shared.exceptions.InvalidRefreshTokenException;
+import com.best.cvapp.shared.exceptions.RefreshTokenExpiredException;
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -22,9 +22,6 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-        // Delete existing refresh token for user
-        refreshTokenRepository.deleteByUser(user);
-
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(user)
@@ -37,19 +34,21 @@ public class RefreshTokenService {
     @Transactional
     public RefreshToken validateRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+                .orElseThrow(InvalidRefreshTokenException::new);
 
         if (refreshToken.isExpired()) {
             refreshTokenRepository.delete(refreshToken);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
+            throw new RefreshTokenExpiredException();
         }
 
         return refreshToken;
     }
 
-
     @Transactional
     public void deleteByUser(User user) {
         refreshTokenRepository.deleteByUser(user);
     }
+
+    @Transactional
+    public void deleteById(Long id) { refreshTokenRepository.findById(id).ifPresent(refreshTokenRepository::delete); }
 }

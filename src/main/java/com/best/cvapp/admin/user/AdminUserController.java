@@ -1,5 +1,7 @@
 package com.best.cvapp.admin.user;
 
+import com.best.cvapp.admin.user.dto.AdminUserResponse;
+import com.best.cvapp.admin.user.dto.ChangeRoleRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

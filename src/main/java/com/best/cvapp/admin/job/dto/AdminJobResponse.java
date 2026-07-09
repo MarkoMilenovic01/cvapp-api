@@ -1,4 +1,4 @@
-package com.best.cvapp.admin.job;
+package com.best.cvapp.admin.job.dto;
 
 import com.best.cvapp.job.core.EmploymentType;
 import com.best.cvapp.job.core.WorkMode;

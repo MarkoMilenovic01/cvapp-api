@@ -2,6 +2,7 @@ package com.best.cvapp.shared.config;
 
 import com.best.cvapp.auth.jwt.JwtAuthenticationFilter;
 import com.best.cvapp.auth.oauth.CustomOAuth2UserService;
+import com.best.cvapp.auth.oauth.OAuth2FailureHandler;
 import com.best.cvapp.auth.oauth.OAuth2SuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -64,6 +66,7 @@ public class SecurityConfig {
                                 .userService(customOAuth2UserService)
                         )
                         .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
                 );
 
         return http.build();

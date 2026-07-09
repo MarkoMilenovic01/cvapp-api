@@ -26,7 +26,6 @@ public class JwtService {
     @Value("${app.jwt.expiration}")
     private long expiration;
 
-    // Creates a JWT token containing the user's email and role
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .subject(userDetails.getUsername())
@@ -37,12 +36,10 @@ public class JwtService {
                 .compact();
     }
 
-    // Extracts email from token — used to identify the user on each request
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Checks if token belongs to the user and hasn't expired
     public boolean isTokenValid(String token, UserDetails userDetails) {
         return extractEmail(token).equals(userDetails.getUsername())
                 && !isTokenExpired(token);

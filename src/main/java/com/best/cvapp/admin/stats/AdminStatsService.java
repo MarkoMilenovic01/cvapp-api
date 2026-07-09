@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.stats;
 
+import com.best.cvapp.admin.stats.dto.AdminStatsResponse;
 import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.job.application.JobApplicationRepository;

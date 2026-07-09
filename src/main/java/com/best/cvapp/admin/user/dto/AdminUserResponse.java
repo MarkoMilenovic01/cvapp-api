@@ -1,4 +1,4 @@
-package com.best.cvapp.admin.user;
+package com.best.cvapp.admin.user.dto;
 
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.user.Role;

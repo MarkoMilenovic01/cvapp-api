@@ -1,4 +1,4 @@
-package com.best.cvapp.job.search;
+package com.best.cvapp.job.search.dto;
 
 import com.best.cvapp.job.core.EmploymentType;
 import com.best.cvapp.job.core.WorkMode;

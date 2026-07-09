@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.job;
 
+import com.best.cvapp.admin.job.dto.AdminJobResponse;
 import com.best.cvapp.job.core.Job;
 import com.best.cvapp.job.core.JobRepository;
 import lombok.RequiredArgsConstructor;

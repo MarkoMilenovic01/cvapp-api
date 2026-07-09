@@ -1,5 +1,6 @@
 package com.best.cvapp.job.application;
 
+import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.job.core.Job;
 import com.best.cvapp.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,4 +19,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     Optional<JobApplication> findByIdAndUser(Long id, User user);
 
     void deleteByJob(Job job);
+    List<JobApplication> findByCv(CV cv);
+    List<JobApplication> findByJob(Job job);
 }

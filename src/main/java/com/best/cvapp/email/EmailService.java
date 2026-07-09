@@ -12,7 +12,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.frontend.url}")
+    @Value("${app.frontend-url}")
     private String frontendUrl;
 
     public void sendCompanyInvite(String toEmail, String token) {

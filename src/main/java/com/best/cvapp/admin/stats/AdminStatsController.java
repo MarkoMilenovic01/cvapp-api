@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.stats;
 
+import com.best.cvapp.admin.stats.dto.AdminStatsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -1,6 +1,7 @@
 package com.best.cvapp.job.search;
 
 import com.best.cvapp.job.core.Job;
+import com.best.cvapp.job.search.dto.JobSearchFilter;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;

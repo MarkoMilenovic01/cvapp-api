@@ -1,4 +1,4 @@
-package com.best.cvapp.admin.stats;
+package com.best.cvapp.admin.stats.dto;
 
 public record AdminStatsResponse(
         long totalUsers,

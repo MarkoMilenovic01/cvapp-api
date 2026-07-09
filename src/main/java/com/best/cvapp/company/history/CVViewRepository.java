@@ -16,4 +16,8 @@ public interface CVViewRepository extends JpaRepository<CVView, Long> {
     Optional<CVView> findByCompanyAndCv(Company company, CV cv);
 
     void deleteByCompany(Company company);
+
+    List<CVView> findByCv(CV cv);
+    List<CVView> findByCompany(Company company);
+
 }
