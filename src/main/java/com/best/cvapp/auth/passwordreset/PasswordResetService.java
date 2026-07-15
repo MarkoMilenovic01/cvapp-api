@@ -1,22 +1,43 @@
 package com.best.cvapp.auth.passwordreset;
 
+import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.auth.passwordreset.dto.ForgotPasswordRequest;
 import com.best.cvapp.auth.passwordreset.dto.PasswordResetRequest;
+import com.best.cvapp.auth.session.RefreshTokenService;
 import com.best.cvapp.email.EmailService;
-import com.best.cvapp.auth.oauth.AuthProvider;
+import com.best.cvapp.auth.credentials.exception.GoogleAccountLoginRequiredException;
+import com.best.cvapp.auth.passwordreset.exception.InvalidResetTokenException;
+import com.best.cvapp.auth.passwordreset.exception.NoAccountFoundException;
+import com.best.cvapp.auth.credentials.exception.PasswordsDoNotMatchException;
+import com.best.cvapp.auth.passwordreset.exception.ResetTokenAlreadyUsedException;
+import com.best.cvapp.auth.passwordreset.exception.ResetTokenExpiredException;
+import com.best.cvapp.auth.passwordreset.exception.UserNotFoundException;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Handles the "forgot password" flow: requesting a reset link and using
+ * it to set a new password.
+ *
+ * Flow:
+ * 1. Forgot password - normalize email, look up the account (Google
+ *                        accounts are pointed to Google login instead),
+ *                        replace any existing reset token, and email a
+ *                        new one.
+ * 2. Reset password  - check passwords match, validate the token (must
+ *                        exist, be unused, and not be expired), update
+ *                        the password, revoke all of the user's existing
+ *                        sessions, and mark the token used.
+ */
 @Service
 @RequiredArgsConstructor
 public class PasswordResetService {
@@ -25,70 +46,68 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${app.password-reset.expiration-hours:1}")
     private int passwordResetExpirationHours;
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No account found with this email"
-                ));
+        String email = normalizeEmail(request.email());
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(NoAccountFoundException::new);
 
         if (user.getProvider() == AuthProvider.GOOGLE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "This account uses Google login. Please sign in with Google."
-            );
+            throw new GoogleAccountLoginRequiredException();
         }
 
-        passwordResetTokenRepository.deleteByEmail(request.email());
+        passwordResetTokenRepository.deleteByEmail(email);
 
         String token = UUID.randomUUID().toString();
 
         PasswordResetToken resetToken = PasswordResetToken.builder()
-                .email(request.email())
+                .email(email)
                 .token(token)
                 .used(false)
                 .expiresAt(LocalDateTime.now().plusHours(passwordResetExpirationHours))
                 .build();
 
         passwordResetTokenRepository.save(resetToken);
-        emailService.sendPasswordResetEmail(request.email(), token);
+
+        emailService.sendPasswordResetEmail(email, token);
     }
 
     @Transactional
     public void resetPassword(PasswordResetRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
+            throw new PasswordsDoNotMatchException();
         }
 
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.token())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Invalid reset token"
-                ));
+                .orElseThrow(InvalidResetTokenException::new);
 
         if (resetToken.isUsed()) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Reset token already used");
+            throw new ResetTokenAlreadyUsedException();
         }
 
         if (resetToken.isExpired()) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Reset token has expired");
+            throw new ResetTokenExpiredException();
         }
 
         User user = userRepository.findByEmail(resetToken.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
+                .orElseThrow(UserNotFoundException::new);
 
         user.setPassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
 
+        refreshTokenService.deleteByUser(user);
+
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

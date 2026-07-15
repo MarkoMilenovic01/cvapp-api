@@ -1,7 +1,17 @@
 package com.best.cvapp.auth.companyinvite;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -26,6 +36,7 @@ public class CompanyInvite {
     private String companyName;
 
     @Column(nullable = false, unique = true)
+    @Size(max = 36)
     private String token;
 
     @Column(nullable = false)

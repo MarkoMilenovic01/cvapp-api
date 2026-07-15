@@ -37,4 +37,14 @@ public class EmailService {
                 "\n\nThis link expires in 1 hour. If you did not request this, ignore this email.");
         mailSender.send(message);
     }
+
+    public void sendVerificationEmail(String toEmail, String token) {
+        String link = frontendUrl + "/verify-email?token=" + token;
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Verify your CVApp email");
+        message.setText("Click the link below to verify your email address:\n\n" + link +
+                "\n\nThis link expires in 24 hours.");
+        mailSender.send(message);
+    }
 }

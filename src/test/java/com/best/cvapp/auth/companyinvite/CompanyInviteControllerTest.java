@@ -1,8 +1,10 @@
 package com.best.cvapp.auth.companyinvite;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.emailverification.dto.VerifyEmailRequest;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -10,13 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -26,23 +23,31 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class CompanyInviteControllerTest {
+public class CompanyInviteControllerTest extends AbstractIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private JdbcTemplate jdbcTemplate;
-    @Autowired private CompanyInviteRepository inviteRepository;
-    @Autowired private UserRepository userRepository;
-    @MockitoBean private JavaMailSender javaMailSender;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private CompanyInviteRepository inviteRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
     private String adminToken;
 
     @BeforeEach
     void setUp() throws Exception {
-        jdbcTemplate.execute("TRUNCATE TABLE company_invites, refresh_tokens, users RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("""
+            TRUNCATE TABLE company_invites, email_verification_tokens, refresh_tokens, users
+            RESTART IDENTITY CASCADE
+            """);
+
         adminToken = seedAdminAndGetToken();
     }
 
@@ -67,7 +72,7 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldFailSendInviteWithUserToken() throws Exception {
-        String userToken = registerUserAndGetToken("user@test.com", "Test@1234");
+        String userToken = registerVerifyAndLoginGetToken("user@test.com", "Test@1234");
 
         mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + userToken)
@@ -93,7 +98,7 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldFailSendInviteToAlreadyRegisteredEmail() throws Exception {
-        registerUserAndGetToken("existing@test.com", "Test@1234");
+        registerAndVerify("existing@test.com", "Test@1234");
 
         mockMvc.perform(post("/api/auth/company-invites")
                         .header("Authorization", "Bearer " + adminToken)
@@ -117,7 +122,11 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldAcceptInviteSuccessfully() throws Exception {
-        String token = saveInvite("company@test.com", false, LocalDateTime.now().plusHours(48));
+        String token = saveInvite(
+                "company@test.com",
+                false,
+                LocalDateTime.now().plusHours(48)
+        );
 
         mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -138,7 +147,11 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldFailAcceptInviteAlreadyUsed() throws Exception {
-        String token = saveInvite("company@test.com", true, LocalDateTime.now().plusHours(48));
+        String token = saveInvite(
+                "company@test.com",
+                true,
+                LocalDateTime.now().plusHours(48)
+        );
 
         mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +161,11 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldFailAcceptExpiredInvite() throws Exception {
-        String token = saveInvite("company@test.com", false, LocalDateTime.now().minusHours(1));
+        String token = saveInvite(
+                "company@test.com",
+                false,
+                LocalDateTime.now().minusHours(1)
+        );
 
         mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -158,33 +175,31 @@ public class CompanyInviteControllerTest {
 
     @Test
     void shouldLoginAfterAcceptingInvite() throws Exception {
-        String token = saveInvite("company@test.com", false, LocalDateTime.now().plusHours(48));
+        String token = saveInvite(
+                "company@test.com",
+                false,
+                LocalDateTime.now().plusHours(48)
+        );
 
         mockMvc.perform(post("/api/auth/company-invites/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(acceptInviteRequest(token, "Test@1234"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("COMPANY"));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new LoginRequest("company@test.com", "Test@1234"))))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").exists())
+                .andExpect(jsonPath("$.refreshToken").exists())
                 .andExpect(jsonPath("$.role").value("COMPANY"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String seedAdminAndGetToken() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                              "email": "admin@test.com",
-                              "password": "Password123!",
-                              "confirmPassword": "Password123!"
-                            }
-                            """))
-                .andExpect(status().isOk());
+        registerAndVerify("admin@test.com", "Password123!");
 
         User admin = userRepository.findByEmail("admin@test.com")
                 .orElseThrow();
@@ -192,37 +207,69 @@ public class CompanyInviteControllerTest {
         admin.setRole(Role.ADMIN);
         userRepository.save(admin);
 
-        String response = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                              "email": "admin@test.com",
-                              "password": "Password123!"
-                            }
-                            """))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        MvcResult result = login("admin@test.com", "Password123!");
 
-        return objectMapper.readTree(response)
+        return extractAccessToken(result);
+    }
+
+    private String registerVerifyAndLoginGetToken(String email, String password) throws Exception {
+        registerAndVerify(email, password);
+
+        MvcResult result = login(email, password);
+
+        return extractAccessToken(result);
+    }
+
+    private MvcResult register(String email, String password) throws Exception {
+        return mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(registerRequest(email, password))))
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    private void registerAndVerify(String email, String password) throws Exception {
+        register(email, password);
+        verifyEmail(email);
+    }
+
+    private void verifyEmail(String email) throws Exception {
+        String token = fetchVerificationToken(email);
+
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new VerifyEmailRequest(token))))
+                .andExpect(status().isNoContent());
+    }
+
+    private String fetchVerificationToken(String email) {
+        return jdbcTemplate.queryForObject("""
+            SELECT t.token
+            FROM email_verification_tokens t
+            JOIN users u ON u.id = t.user_id
+            WHERE u.email = ?
+            """, String.class, email);
+    }
+
+    private MvcResult login(String email, String password) throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new LoginRequest(email, password))))
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    private String extractAccessToken(MvcResult result) throws Exception {
+        String body = result.getResponse().getContentAsString();
+
+        return objectMapper.readTree(body)
                 .get("accessToken")
                 .asText();
     }
 
-    private String registerUserAndGetToken(String email, String password) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RegisterRequest(email, password, password))))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        return objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken").asText();
-    }
-
     private String saveInvite(String email, boolean used, LocalDateTime expiresAt) {
         String token = UUID.randomUUID().toString();
+
         inviteRepository.save(CompanyInvite.builder()
                 .email(email)
                 .companyName("Test Company")
@@ -230,10 +277,13 @@ public class CompanyInviteControllerTest {
                 .used(used)
                 .expiresAt(expiresAt)
                 .build());
+
         return token;
     }
 
-    private record InviteRequestBody(String email, String companyName) {}
+    private RegisterRequest registerRequest(String email, String password) {
+        return new RegisterRequest(email, password, password);
+    }
 
     private InviteRequestBody inviteRequest(String email, String companyName) {
         return new InviteRequestBody(email, companyName);
@@ -245,5 +295,8 @@ public class CompanyInviteControllerTest {
 
     private String toJson(Object obj) throws Exception {
         return objectMapper.writeValueAsString(obj);
+    }
+
+    private record InviteRequestBody(String email, String companyName) {
     }
 }

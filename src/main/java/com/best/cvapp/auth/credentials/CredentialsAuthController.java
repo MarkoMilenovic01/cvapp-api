@@ -2,6 +2,7 @@ package com.best.cvapp.auth.credentials;
 
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterResponse;
 import com.best.cvapp.auth.session.dto.AuthResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class CredentialsAuthController {
     private final CredentialsAuthService credentialsAuthService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(credentialsAuthService.register(request));
     }
 

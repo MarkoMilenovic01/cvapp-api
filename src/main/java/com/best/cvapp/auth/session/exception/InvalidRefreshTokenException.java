@@ -1,5 +1,6 @@
-package com.best.cvapp.shared.exceptions;
+package com.best.cvapp.auth.session.exception;
 
+import com.best.cvapp.shared.exceptions.AppException;
 import org.springframework.http.HttpStatus;
 
 public class InvalidRefreshTokenException extends AppException {

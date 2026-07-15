@@ -2,12 +2,14 @@ package com.best.cvapp.auth.credentials;
 
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterResponse;
+import com.best.cvapp.auth.emailverification.EmailVerificationService;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.auth.session.AuthSessionService;
 import com.best.cvapp.auth.session.dto.AuthResponse;
-import com.best.cvapp.shared.exceptions.EmailAlreadyInUseException;
-import com.best.cvapp.shared.exceptions.GoogleAccountLoginRequiredException;
-import com.best.cvapp.shared.exceptions.PasswordsDoNotMatchException;
+import com.best.cvapp.auth.credentials.exception.EmailAlreadyInUseException;
+import com.best.cvapp.auth.credentials.exception.GoogleAccountLoginRequiredException;
+import com.best.cvapp.auth.credentials.exception.PasswordsDoNotMatchException;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -22,6 +24,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
+/**
+ * Handles login and registration with email and password.
+ *
+ * Flow:
+ * 1. Register - check passwords    match, normalize email, reject if the email
+ *                is already taken (pointing Google accounts to Google login
+ *                instead), hash the password, save the user as disabled,
+ *                and send a verification email. Returns a generic message,
+ *                never confirming or denying account state to the caller.
+ * 2. Login    - normalize email, authenticate through Spring Security
+ *                (handles bad credentials and disabled accounts), then
+ *                create a new session for the authenticated user.
+ */
 @Service
 @RequiredArgsConstructor
 public class CredentialsAuthService {
@@ -30,9 +45,10 @@ public class CredentialsAuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final AuthSessionService authSessionService;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
             throw new PasswordsDoNotMatchException();
         }
@@ -43,7 +59,6 @@ public class CredentialsAuthService {
             if (existingUser.getProvider() == AuthProvider.GOOGLE) {
                 throw new GoogleAccountLoginRequiredException();
             }
-
             throw new EmailAlreadyInUseException();
         });
 
@@ -52,7 +67,7 @@ public class CredentialsAuthService {
                 .password(passwordEncoder.encode(request.password()))
                 .role(Role.USER)
                 .provider(AuthProvider.LOCAL)
-                .enabled(true)
+                .enabled(false)
                 .build();
 
         try {
@@ -61,7 +76,9 @@ public class CredentialsAuthService {
             throw new EmailAlreadyInUseException();
         }
 
-        return authSessionService.createSession(user);
+        emailVerificationService.createAndSendVerification(user);
+
+        return new RegisterResponse("Registration successful. Please check your email to verify your account.");
     }
 
     @Transactional

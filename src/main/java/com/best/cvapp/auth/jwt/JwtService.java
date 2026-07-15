@@ -11,11 +11,27 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
 
+
 /**
- * Handles all JWT operations:
- * - Generating tokens after login/register
- * - Extracting claims (email, role) from tokens
- * - Validating tokens on each request
+ * Service responsible for creating and validating JWT access tokens.
+ *
+ * Flow when generating a token:
+ * 1. Takes the authenticated user's details.
+ * 2. Stores the user's email as the JWT subject.
+ * 3. Stores the user's role as a custom claim.
+ * 4. Adds issue time and expiration time.
+ * 5. Signs the token using the configured secret key.
+ *
+ * Flow when validating a token:
+ * 1. Verifies the token signature using the configured secret key.
+ * 2. Extracts the email from the token subject.
+ * 3. Checks that the email matches the loaded user.
+ * 4. Checks that the user account is still enabled.
+ * 5. Checks that the token has not expired.
+ *
+ * Access tokens are stateless. They are not stored in the database.
+ * Once issued, they remain valid until expiration unless the user is
+ * disabled, because validation also checks the user's enabled status.
  */
 @Service
 public class JwtService {
@@ -42,6 +58,7 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         return extractEmail(token).equals(userDetails.getUsername())
+                && userDetails.isEnabled()
                 && !isTokenExpired(token);
     }
 
