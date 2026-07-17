@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.stats;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AdminStatsControllerTest {
+public class AdminStatsControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -60,6 +61,12 @@ public class AdminStatsControllerTest {
                 companyId, "Inactive Job", "This job is inactive"
         );
 
+        jdbcTemplate.update(
+                "INSERT INTO jobs (company_id, title, description, employment_type, work_mode, deadline, active) " +
+                        "VALUES (?, ?, ?, 'INTERNSHIP', 'REMOTE', CURRENT_DATE - 1, true)",
+                companyId, "Expired Job", "This active job is no longer publicly visible"
+        );
+
         // seed regular user + cv
         Long userId = jdbcTemplate.queryForObject(
                 "INSERT INTO users (email, password, role, enabled, provider) VALUES (?, ?, 'USER', true, 'LOCAL') RETURNING id",
@@ -85,9 +92,9 @@ public class AdminStatsControllerTest {
                 .andExpect(jsonPath("$.totalUsers").value(3))        // admin + company + user
                 .andExpect(jsonPath("$.totalCompanies").value(1))
                 .andExpect(jsonPath("$.totalCVs").value(1))
-                .andExpect(jsonPath("$.totalJobs").value(2))
+                .andExpect(jsonPath("$.totalJobs").value(3))
                 .andExpect(jsonPath("$.activeJobs").value(1))
-                .andExpect(jsonPath("$.inactiveJobs").value(1))
+                .andExpect(jsonPath("$.inactiveJobs").value(2))
                 .andExpect(jsonPath("$.totalApplications").value(0));
     }
 

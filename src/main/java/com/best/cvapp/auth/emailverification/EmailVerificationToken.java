@@ -31,7 +31,7 @@ public class EmailVerificationToken {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    @Size(max = 36)
+    @Size(max = 64)
     private String token;
 
     @OneToOne

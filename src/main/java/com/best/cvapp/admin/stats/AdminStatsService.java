@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -23,7 +25,7 @@ public class AdminStatsService {
 
     public AdminStatsResponse getStats() {
         long totalJobs    = jobRepository.count();
-        long activeJobs   = jobRepository.countByActiveTrue();
+        long activeJobs   = jobRepository.countVisibleJobs(LocalDate.now());
         return new AdminStatsResponse(
                 userRepository.count(),
                 companyRepository.count(),

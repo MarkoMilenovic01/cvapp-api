@@ -2,16 +2,27 @@ package com.best.cvapp.company.profile;
 
 import com.best.cvapp.company.profile.dto.CompanyRequest;
 import com.best.cvapp.company.profile.dto.CompanyResponse;
+import com.best.cvapp.company.profile.exception.CompanyAccountNotFoundException;
+import com.best.cvapp.company.profile.exception.CompanyAuthenticationRequiredException;
+import com.best.cvapp.company.profile.exception.CompanyUserNotFoundException;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Handles the authenticated company's profile.
+ *
+ * Flow:
+ * 1. Resolve the authenticated user from the security context.
+ * 2. Load the company profile belonging to that user.
+ * 3. Return the current profile or update its submitted details.
+ * 4. Save profile changes.
+ * 5. Map the company to its response.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,25 +56,16 @@ public class CompanyProfileService {
                 .getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Unauthenticated"
-            );
+            throw new CompanyAuthenticationRequiredException();
         }
 
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
+                .orElseThrow(CompanyUserNotFoundException::new);
 
         return companyRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Company not found"
-                ));
+                .orElseThrow(CompanyAccountNotFoundException::new);
     }
 
     private CompanyResponse mapToResponse(Company company) {

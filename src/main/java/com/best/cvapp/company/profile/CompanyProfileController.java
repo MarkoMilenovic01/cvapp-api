@@ -2,6 +2,7 @@ package com.best.cvapp.company.profile;
 
 import com.best.cvapp.company.profile.dto.CompanyRequest;
 import com.best.cvapp.company.profile.dto.CompanyResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,7 @@ public class CompanyProfileController {
 
     @PutMapping
     public ResponseEntity<CompanyResponse> updateMyProfile(
-            @RequestBody CompanyRequest request
+            @Valid @RequestBody CompanyRequest request
     ) {
         return ResponseEntity.ok(companyProfileService.updateMyProfile(request));
     }

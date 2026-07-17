@@ -2,11 +2,13 @@ package com.best.cvapp.cv.education;
 
 import com.best.cvapp.cv.profile.CV;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface EducationRepository extends JpaRepository<Education, Long> {
-    List<Education> findByCv(CV cv);
+
+    List<Education> findByCvOrderByCurrentDescStartDateDesc(CV cv);
+
+    Optional<Education> findByIdAndCv(Long id, CV cv);
 }

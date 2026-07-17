@@ -13,11 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class PasswordResetControllerTest extends AbstractIntegrationTest {
+class PasswordResetControllerTest extends AbstractIntegrationTest {
+
+    private static final String AUTH_URL = "/api/auth";
+    private static final String TEST_EMAIL = "test@best.com";
+    private static final String TEST_PASSWORD = "Test@1234";
+    private static final String NEW_PASSWORD = "NewPass@1234";
 
     @Autowired
     private MockMvc mockMvc;
@@ -39,17 +45,17 @@ public class PasswordResetControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldSendResetEmailForExistingUser() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        registerAndVerify(TEST_EMAIL, TEST_PASSWORD);
 
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post(AUTH_URL + "/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new ForgotPasswordRequest("test@best.com"))))
+                        .content(toJson(new ForgotPasswordRequest(TEST_EMAIL))))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void shouldReturn404ForNonExistentEmail() throws Exception {
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post(AUTH_URL + "/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new ForgotPasswordRequest("nobody@best.com"))))
                 .andExpect(status().isNotFound());
@@ -57,7 +63,7 @@ public class PasswordResetControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailForgotPasswordWithBlankEmail() throws Exception {
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post(AUTH_URL + "/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new ForgotPasswordRequest(""))))
                 .andExpect(status().isBadRequest());
@@ -67,135 +73,71 @@ public class PasswordResetControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldResetPasswordSuccessfully() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
-
-        requestReset("test@best.com");
-
-        String token = getResetToken("test@best.com");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "NewPass@1234",
-                                "NewPass@1234"
-                        ))))
+        String token = prepareResetToken();
+        resetPassword(token, NEW_PASSWORD, NEW_PASSWORD)
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new LoginRequest("test@best.com", "NewPass@1234"))))
+                        .content(toJson(new LoginRequest(TEST_EMAIL, NEW_PASSWORD))))
                 .andExpect(status().isOk());
     }
 
     @Test
     void shouldFailLoginWithOldPasswordAfterReset() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
-
-        requestReset("test@best.com");
-
-        String token = getResetToken("test@best.com");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "NewPass@1234",
-                                "NewPass@1234"
-                        ))))
+        String token = prepareResetToken();
+        resetPassword(token, NEW_PASSWORD, NEW_PASSWORD)
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new LoginRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(new LoginRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldFailResetWithInvalidToken() throws Exception {
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                "invalid-token",
-                                "NewPass@1234",
-                                "NewPass@1234"
-                        ))))
+        resetPassword("invalid-token", NEW_PASSWORD, NEW_PASSWORD)
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldFailResetWithExpiredToken() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
-
-        requestReset("test@best.com");
+        String token = prepareResetToken();
 
         jdbcTemplate.update("""
             UPDATE password_reset_tokens
             SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
             WHERE email = ?
-            """, "test@best.com");
+            """, TEST_EMAIL);
 
-        String token = getResetToken("test@best.com");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "NewPass@1234",
-                                "NewPass@1234"
-                        ))))
+        resetPassword(token, NEW_PASSWORD, NEW_PASSWORD)
                 .andExpect(status().isGone());
     }
 
     @Test
     void shouldFailResetWhenPasswordsDoNotMatch() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        String token = prepareResetToken();
 
-        requestReset("test@best.com");
-
-        String token = getResetToken("test@best.com");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "NewPass@1234",
-                                "Different@1234"
-                        ))))
+        resetPassword(token, NEW_PASSWORD, "Different@1234")
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void shouldFailResetTokenUsedTwice() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        String token = prepareResetToken();
 
-        requestReset("test@best.com");
-
-        String token = getResetToken("test@best.com");
-
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "NewPass@1234",
-                                "NewPass@1234"
-                        ))))
+        resetPassword(token, NEW_PASSWORD, NEW_PASSWORD)
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new PasswordResetRequest(
-                                token,
-                                "Another@1234",
-                                "Another@1234"
-                        ))))
+        resetPassword(token, "Another@1234", "Another@1234")
                 .andExpect(status().isGone());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void register(String email, String password) throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RegisterRequest(email, password, password))))
                 .andExpect(status().isOk());
@@ -209,34 +151,41 @@ public class PasswordResetControllerTest extends AbstractIntegrationTest {
     private void verifyEmail(String email) throws Exception {
         String token = getVerificationToken(email);
 
-        mockMvc.perform(post("/api/auth/verify-email")
+        mockMvc.perform(post(AUTH_URL + "/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new VerifyEmailRequest(token))))
                 .andExpect(status().isNoContent());
     }
 
     private String getVerificationToken(String email) {
-        return jdbcTemplate.queryForObject("""
-            SELECT t.token
-            FROM email_verification_tokens t
-            JOIN users u ON u.id = t.user_id
-            WHERE u.email = ?
-            """, String.class, email);
+        return storeKnownVerificationToken(jdbcTemplate, email);
     }
 
     private void requestReset(String email) throws Exception {
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post(AUTH_URL + "/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new ForgotPasswordRequest(email))))
                 .andExpect(status().isNoContent());
     }
 
     private String getResetToken(String email) {
-        return jdbcTemplate.queryForObject("""
-            SELECT token
-            FROM password_reset_tokens
-            WHERE email = ?
-            """, String.class, email);
+        return storeKnownPasswordResetToken(jdbcTemplate, email);
+    }
+
+    private String prepareResetToken() throws Exception {
+        registerAndVerify(TEST_EMAIL, TEST_PASSWORD);
+        requestReset(TEST_EMAIL);
+        return getResetToken(TEST_EMAIL);
+    }
+
+    private ResultActions resetPassword(
+            String token,
+            String password,
+            String confirmPassword
+    ) throws Exception {
+        return mockMvc.perform(post(AUTH_URL + "/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(new PasswordResetRequest(token, password, confirmPassword))));
     }
 
     private String toJson(Object obj) throws Exception {

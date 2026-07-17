@@ -23,18 +23,13 @@ import java.util.Collections;
 import java.util.UUID;
 
 /**
- * Handles login with Google.
+ * Handles Google login.
  *
  * Flow:
- * 1. Verify   - check the ID token with Google directly (audience must
- *                match our client id, email must be verified).
- * 2. Match    - look up the verified email; if it belongs to an account
- *                created a different way (e.g. local email/password),
- *                reject instead of silently logging into that account.
- * 3. Register - if no account exists yet, create one automatically with
- *                a random, unusable password, since the user will always
- *                log in through Google, never a password.
- * 4. Session  - create a normal session, same as local login.
+ * 1. Verify the Google ID token and email.
+ * 2. Find the user by email.
+ * 3. Create a Google user if one does not exist.
+ * 4. Create a session.
  */
 @Service
 @RequiredArgsConstructor

@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.job;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AdminJobControllerTest {
+public class AdminJobControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -70,6 +71,14 @@ public class AdminJobControllerTest {
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Backend Intern"));
+    }
+
+    @Test
+    void shouldRejectExcessiveJobPageSize() throws Exception {
+        mockMvc.perform(get("/api/admin/jobs?size=101")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Page size must not exceed 100"));
     }
 
     @Test
@@ -128,10 +137,40 @@ public class AdminJobControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void shouldRejectActivatingExpiredJob() throws Exception {
+        jdbcTemplate.update(
+                "UPDATE jobs SET active = false, deadline = CURRENT_DATE - 1 WHERE id = ?",
+                seededJobId
+        );
+
+        mockMvc.perform(patch("/api/admin/jobs/" + seededJobId + "/toggle")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("A job with a past deadline cannot be activated"));
+    }
+
     // ── DELETE /api/admin/jobs/{id} ───────────────────────────────────────────
 
     @Test
     void shouldDeleteJob() throws Exception {
+        Long applicantUserId = jdbcTemplate.queryForObject(
+                "INSERT INTO users (email, password, role, enabled, provider) " +
+                        "VALUES (?, ?, 'USER', true, 'LOCAL') RETURNING id",
+                Long.class,
+                "applicant@cvapp.com", passwordEncoder.encode("Test@1234")
+        );
+        Long cvId = jdbcTemplate.queryForObject(
+                "INSERT INTO cvs (user_id, first_name, last_name) VALUES (?, ?, ?) RETURNING id",
+                Long.class,
+                applicantUserId, "Test", "Applicant"
+        );
+        jdbcTemplate.update(
+                "INSERT INTO job_applications (job_id, user_id, cv_id, status) VALUES (?, ?, ?, 'APPLIED')",
+                seededJobId, applicantUserId, cvId
+        );
+
         mockMvc.perform(delete("/api/admin/jobs/" + seededJobId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
@@ -139,6 +178,13 @@ public class AdminJobControllerTest {
         mockMvc.perform(get("/api/admin/jobs/" + seededJobId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
+
+        Integer remainingApplications = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM job_applications WHERE job_id = ?",
+                Integer.class,
+                seededJobId
+        );
+        org.assertj.core.api.Assertions.assertThat(remainingApplications).isZero();
     }
 
     @Test

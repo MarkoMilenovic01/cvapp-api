@@ -1,5 +1,6 @@
 package com.best.cvapp.admin.user;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.admin.user.dto.ChangeRoleRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AdminUserControllerTest {
+public class AdminUserControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -28,6 +29,7 @@ public class AdminUserControllerTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private String adminToken;
+    private Long seededAdminId;
     private Long seededUserId;
 
     @BeforeEach
@@ -35,8 +37,9 @@ public class AdminUserControllerTest {
         jdbcTemplate.execute("TRUNCATE TABLE refresh_tokens, users RESTART IDENTITY CASCADE");
 
         // seed admin
-        jdbcTemplate.update(
-                "INSERT INTO users (email, password, role, enabled, provider) VALUES (?, ?, 'ADMIN', true, 'LOCAL')",
+        seededAdminId = jdbcTemplate.queryForObject(
+                "INSERT INTO users (email, password, role, enabled, provider) VALUES (?, ?, 'ADMIN', true, 'LOCAL') RETURNING id",
+                Long.class,
                 "admin@cvapp.com", passwordEncoder.encode("Test@1234")
         );
 
@@ -59,6 +62,14 @@ public class AdminUserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content.length()").value(2));
+    }
+
+    @Test
+    void shouldRejectExcessiveUserPageSize() throws Exception {
+        mockMvc.perform(get("/api/admin/users?size=101")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Page size must not exceed 100"));
     }
 
     @Test
@@ -111,12 +122,19 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
+    @Test
+    void shouldRejectDisablingOwnAdminAccount() throws Exception {
+        mockMvc.perform(patch("/api/admin/users/" + seededAdminId + "/toggle")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Administrators cannot disable their own account"));
+    }
+
     // ── PATCH /api/admin/users/{id}/role ─────────────────────────────────────
 
     @Test
     void shouldChangeUserRole() throws Exception {
-        ChangeRoleRequest request = new ChangeRoleRequest();
-        request.setRole(com.best.cvapp.user.Role.ADMIN);
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.ADMIN);
 
         mockMvc.perform(patch("/api/admin/users/" + seededUserId + "/role")
                         .header("Authorization", "Bearer " + adminToken)
@@ -128,14 +146,82 @@ public class AdminUserControllerTest {
 
     @Test
     void shouldReturn404WhenChangingRoleOfNonExistentUser() throws Exception {
-        ChangeRoleRequest request = new ChangeRoleRequest();
-        request.setRole(com.best.cvapp.user.Role.ADMIN);
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.ADMIN);
 
         mockMvc.perform(patch("/api/admin/users/99999/role")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldRejectChangingUserToCompanyWithoutCompanyProfile() throws Exception {
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.COMPANY);
+
+        mockMvc.perform(patch("/api/admin/users/" + seededUserId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "A user cannot receive the COMPANY role without an existing company profile"));
+    }
+
+    @Test
+    void shouldRejectNullRole() throws Exception {
+        mockMvc.perform(patch("/api/admin/users/" + seededUserId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":null}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+
+    @Test
+    void shouldRejectMalformedRole() throws Exception {
+        mockMvc.perform(patch("/api/admin/users/" + seededUserId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":\"OWNER\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Request body is missing or invalid"));
+    }
+
+    @Test
+    void shouldRejectChangingCompanyAccountToUser() throws Exception {
+        Long companyUserId = jdbcTemplate.queryForObject(
+                "INSERT INTO users (email, password, role, enabled, provider) " +
+                        "VALUES (?, ?, 'COMPANY', true, 'LOCAL') RETURNING id",
+                Long.class,
+                "company@cvapp.com", passwordEncoder.encode("Test@1234")
+        );
+        jdbcTemplate.update(
+                "INSERT INTO companies (user_id, name) VALUES (?, ?)",
+                companyUserId, "BEST Nis"
+        );
+
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.USER);
+
+        mockMvc.perform(patch("/api/admin/users/" + companyUserId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "A company account cannot receive the USER role while its company profile exists"));
+    }
+
+    @Test
+    void shouldRejectDemotingOwnAdminAccount() throws Exception {
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.USER);
+
+        mockMvc.perform(patch("/api/admin/users/" + seededAdminId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Administrators cannot demote their own account"));
     }
 
     // ── DELETE /api/admin/users/{id} ─────────────────────────────────────────
@@ -156,6 +242,14 @@ public class AdminUserControllerTest {
         mockMvc.perform(delete("/api/admin/users/99999")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldRejectDeletingOwnAdminAccount() throws Exception {
+        mockMvc.perform(delete("/api/admin/users/" + seededAdminId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Administrators cannot delete their own account"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -2,56 +2,61 @@ package com.best.cvapp.company.cv;
 
 import com.best.cvapp.company.cv.dto.CVSearchRequest;
 import com.best.cvapp.company.profile.Company;
-import com.best.cvapp.company.profile.CompanyRepository;
-import com.best.cvapp.company.favorite.FavoriteCVId;
+import com.best.cvapp.company.profile.CompanyProfileService;
 import com.best.cvapp.company.favorite.FavoriteCVRepository;
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
+import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
-import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
+/**
+ * Handles filtered CV searches for the authenticated company.
+ *
+ * Flow:
+ * 1. Load the company belonging to the authenticated user.
+ * 2. Build a CV specification from the submitted search filters.
+ * 3. Search matching CVs using the requested pagination.
+ * 4. Load the company's favorite identifiers for the result page.
+ * 5. Return a page of CV summaries.
+ */
 @Service
 @RequiredArgsConstructor
 public class CVSearchService {
 
     private final CVRepository cvRepository;
-    private final UserRepository        userRepository;
-    private final CompanyRepository     companyRepository;
+    private final CompanyProfileService companyProfileService;
     private final FavoriteCVRepository  favoriteCVRepository;
 
     public Page<CompanyCVSummaryResponse> searchCVs(CVSearchRequest request, Pageable pageable) {
-        Company company = getAuthenticatedCompany();
+        Company company = companyProfileService.getAuthenticatedCompany();
 
         CVSpecification spec = new CVSpecification(request);
 
-        return cvRepository.findAll(spec, pageable).map(cv -> {
-            boolean isFavorite = favoriteCVRepository.existsById(
-                    new FavoriteCVId(company.getId(), cv.getId())
-            );
-            return new CompanyCVSummaryResponse(
+        Page<CV> cvs = cvRepository.findAll(spec, pageable);
+        Set<Long> favoriteCvIds = findFavoriteCvIds(company, cvs);
+
+        return cvs.map(cv -> new CompanyCVSummaryResponse(
                     cv.getId(),
                     cv.getFirstName(),
                     cv.getLastName(),
                     cv.getSummary(),
-                    isFavorite
-            );
-        });
+                    favoriteCvIds.contains(cv.getId())
+            ));
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────────
+    private Set<Long> findFavoriteCvIds(Company company, Page<CV> cvs) {
+        if (cvs.isEmpty()) {
+            return Set.of();
+        }
 
-    private Company getAuthenticatedCompany() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return companyRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
+        return favoriteCVRepository.findFavoriteCvIds(
+                company,
+                cvs.stream().map(CV::getId).toList()
+        );
     }
 }

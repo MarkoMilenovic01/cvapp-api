@@ -1,0 +1,2 @@
+ALTER TABLE experience
+    ADD COLUMN experience_type VARCHAR(30) NOT NULL DEFAULT 'FULL_TIME';

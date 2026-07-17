@@ -1,11 +1,9 @@
 package com.best.cvapp.admin.user.dto;
 
 import com.best.cvapp.user.Role;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
 
-@Getter
-@Setter
-public class ChangeRoleRequest {
-    private Role role;
-}
+
+public record ChangeRoleRequest(
+        @NotNull Role role
+) {}

@@ -4,32 +4,22 @@ import com.best.cvapp.auth.session.exception.InvalidRefreshTokenException;
 import com.best.cvapp.auth.session.exception.RefreshTokenExpiredException;
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.UUID;
 
 /**
- * Manages refresh tokens: creating them, validating them, and deleting them.
- *
- * Only the SHA-256 hash of a token is ever persisted, so a database leak
- * alone doesn't hand out usable tokens - the raw value is returned to the
- * caller once, at creation, and never stored. If a token doesn't exist or
- * has expired, validation throws instead of returning a user, and expired
- * tokens are deleted as soon as they're found.
+ * Handles refresh tokens.
  *
  * Flow:
- * 1. Create   - generate a random token, hash it, persist the hash,
- *                return the raw token to the caller.
- * 2. Validate - hash the incoming token, look it up, reject if missing
- *                or expired (deleting expired ones on the way out).
- * 3. Delete   - by user (all sessions) or by id (a single session).
+ * 1. Generate a random token.
+ * 2. Store its hash and return the raw token.
+ * 3. Validate the hash and expiration when the token is used.
+ * 4. Delete the token when it expires or the session ends.
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +35,7 @@ public class RefreshTokenService {
         String rawToken = UUID.randomUUID().toString();
 
         RefreshToken refreshToken = RefreshToken.builder()
-                .token(hashToken(rawToken))
+                .token(DigestUtils.sha256Hex(rawToken))
                 .user(user)
                 .expiresAt(LocalDateTime.now().plusSeconds(refreshExpiration / 1000))
                 .build();
@@ -57,7 +47,8 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken validateRefreshToken(String rawToken) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(hashToken(rawToken))
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(
+                        DigestUtils.sha256Hex(rawToken))
                 .orElseThrow(InvalidRefreshTokenException::new);
 
         if (refreshToken.isExpired()) {
@@ -78,13 +69,4 @@ public class RefreshTokenService {
         refreshTokenRepository.findById(id).ifPresent(refreshTokenRepository::delete);
     }
 
-    private String hashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hashedBytes);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 algorithm not available", ex);
-        }
-    }
 }

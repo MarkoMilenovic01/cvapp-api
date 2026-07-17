@@ -6,6 +6,7 @@ import com.best.cvapp.auth.emailverification.exception.VerificationTokenExpiredE
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +14,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Creates, sends, and verifies email verification tokens issued at
- * registration. A user stays disabled until their token is verified.
+ * Handles email verification.
  *
  * Flow:
- * 1. Create and send - replace any existing token for the user, issue
- *                        a new one, and email it.
- * 2. Verify           - look up the token, reject (and delete) it if
- *                        expired, otherwise enable the user and delete
- *                        the token.
+ * 1. Replace any existing verification token.
+ * 2. Create and email a new token.
+ * 3. Validate the submitted token.
+ * 4. Enable the user and delete the token.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,20 +36,22 @@ public class EmailVerificationService {
     public void createAndSendVerification(User user) {
         tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
 
+        String rawToken = UUID.randomUUID().toString();
+
         EmailVerificationToken token = EmailVerificationToken.builder()
-                .token(UUID.randomUUID().toString())
+                .token(DigestUtils.sha256Hex(rawToken))
                 .user(user)
                 .expiresAt(LocalDateTime.now().plusHours(EXPIRATION_HOURS))
                 .build();
 
         tokenRepository.save(token);
 
-        emailService.sendVerificationEmail(user.getEmail(), token.getToken());
+        emailService.sendVerificationEmail(user.getEmail(), rawToken);
     }
 
     @Transactional
     public void verify(String rawToken) {
-        EmailVerificationToken token = tokenRepository.findByToken(rawToken)
+        EmailVerificationToken token = tokenRepository.findByToken(DigestUtils.sha256Hex(rawToken))
                 .orElseThrow(InvalidVerificationTokenException::new);
 
         if (token.isExpired()) {

@@ -1,5 +1,6 @@
 package com.best.cvapp.company.profile;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.user.Role;
@@ -9,22 +10,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class CompanyProfileControllerTest {
+public class CompanyProfileControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -97,6 +92,36 @@ public class CompanyProfileControllerTest {
                 .andExpect(jsonPath("$.industry").value("Education and Technology"));
     }
 
+    @Test
+    void shouldRejectBlankCompanyName() throws Exception {
+        mockMvc.perform(put("/api/company/me")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "   ",
+                                    "description": "Description",
+                                    "website": "https://best.eu.org",
+                                    "industry": "Education"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectUnsafeWebsiteScheme() throws Exception {
+        mockMvc.perform(put("/api/company/me")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "BEST Maribor",
+                                    "website": "javascript:alert(1)"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String createCompanyAndLogin() throws Exception {
@@ -129,11 +154,18 @@ public class CompanyProfileControllerTest {
     }
 
     private String registerUserAndGetToken(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        userRepository.save(User.builder()
+                .email(email)
+                .password(passwordEncoder.encode("Test@1234"))
+                .provider(AuthProvider.LOCAL)
+                .role(Role.USER)
+                .enabled(true)
+                .build());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new com.best.cvapp.auth.credentials.dto.RegisterRequest(
-                                        email, "Test@1234", "Test@1234"))))
+                                new LoginRequest(email, "Test@1234"))))
                 .andExpect(status().isOk())
                 .andReturn();
 

@@ -20,24 +20,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Authentication filter responsible for processing JWT access tokens
- * on every incoming HTTP request.
+ * Authenticates requests with JWT access tokens.
  *
  * Flow:
- * 1. Reads the Authorization header from the request.
- * 2. If the header is missing or does not start with "Bearer ",
- *    the request continues without authentication.
- * 3. Extracts the JWT token from the header.
- * 4. Tries to extract the user's email from the token.
- * 5. Loads the user from the database using UserDetailsService.
- * 6. Validates that the token belongs to that user, is not expired,
- *    and that the user account is still enabled.
- * 7. If valid, creates an Authentication object and stores it in
- *    the SecurityContext for the current request.
- *
- * Invalid or expired tokens do not directly stop the request here.
- * Instead, the security context is cleared and Spring Security decides
- * later whether the endpoint requires authentication.
+ * 1. Read the Bearer token from the request.
+ * 2. Extract the email and load the user.
+ * 3. Validate the token.
+ * 4. Store the authenticated user in the security context.
  */
 
 @Component
@@ -49,11 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
     /**
-     * Executes the JWT authentication logic once per request.
-     *
-     * If a valid Bearer token is present, the user is authenticated for
-     * the duration of the request. If the token is missing or invalid,
-     * the request continues without an authenticated user.
+     * Processes JWT authentication once per request.
      */
     @Override
     protected void doFilterInternal(
@@ -81,11 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Validates the given JWT and, if valid, places the authenticated user
-     * into the Spring Security context.
-     *
-     * the raw JWT access token without the "Bearer " prefix
-     *  the current HTTP request, used to attach request details
+     * Adds the authenticated user to the security context when the JWT is valid.
      */
     private void authenticateRequest(String jwt, HttpServletRequest request) {
         String email = jwtService.extractEmail(jwt);

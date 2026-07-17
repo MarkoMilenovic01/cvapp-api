@@ -1,18 +1,14 @@
 package com.best.cvapp.cv.education.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.time.LocalDate;
 
-@Getter
-@AllArgsConstructor
-public class EducationResponse {
-    private Long id;
-    private String institution;
-    private String degree;
-    private String fieldOfStudy;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private boolean current;
+public record EducationResponse(
+        Long id,
+        String institution,
+        String degree,
+        String fieldOfStudy,
+        LocalDate startDate,
+        LocalDate endDate,
+        boolean current
+) {
 }

@@ -36,7 +36,7 @@ public class CompanyInvite {
     private String companyName;
 
     @Column(nullable = false, unique = true)
-    @Size(max = 36)
+    @Size(max = 64)
     private String token;
 
     @Column(nullable = false)

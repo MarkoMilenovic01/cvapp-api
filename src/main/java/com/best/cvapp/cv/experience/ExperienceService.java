@@ -2,97 +2,111 @@ package com.best.cvapp.cv.experience;
 
 import com.best.cvapp.cv.experience.dto.ExperienceRequest;
 import com.best.cvapp.cv.experience.dto.ExperienceResponse;
+import com.best.cvapp.cv.experience.exception.ExperienceNotFoundException;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.profile.exception.CVNotFoundException;
 import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Handles experience entries for the authenticated user's CV.
+ *
+ * Flow:
+ * 1. Load the CV belonging to the authenticated user.
+ * 2. List its experience entries in current and start-date order.
+ * 3. Create or update an experience entry from the submitted details.
+ * 4. Verify that an entry belongs to the user's CV before changing it.
+ * 5. Return the saved entry or delete it.
+ */
 @Service
 @RequiredArgsConstructor
 public class ExperienceService {
 
     private final ExperienceRepository experienceRepository;
     private final CVRepository cvRepository;
-    private final UserRepository userRepository;
 
-    public List<ExperienceResponse> getAll() {
-        CV cv = getAuthenticatedUserCV();
-        return experienceRepository.findByCv(cv).stream()
+    @Transactional(readOnly = true)
+    public List<ExperienceResponse> getAll(User currentUser) {
+        CV cv = getUserCV(currentUser);
+
+        return experienceRepository.findByCvOrderByCurrentDescStartDateDesc(cv).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public ExperienceResponse add(ExperienceRequest request) {
-        CV cv = getAuthenticatedUserCV();
+    @Transactional
+    public ExperienceResponse add(
+            ExperienceRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
         Experience experience = Experience.builder()
                 .cv(cv)
-                .companyName(request.getCompanyName())
-                .position(request.getPosition())
-                .description(request.getDescription())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .current(request.isCurrent())
+                .companyName(request.companyName())
+                .position(request.position())
+                .experienceType(request.experienceType())
+                .description(request.description())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .current(request.current())
                 .build();
 
         return mapToResponse(experienceRepository.save(experience));
     }
 
-    public ExperienceResponse update(Long id, ExperienceRequest request) {
-        Experience experience = getExperienceAndVerifyOwnership(id);
+    @Transactional
+    public ExperienceResponse update(
+            Long id,
+            ExperienceRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
-        experience.setCompanyName(request.getCompanyName());
-        experience.setPosition(request.getPosition());
-        experience.setDescription(request.getDescription());
-        experience.setStartDate(request.getStartDate());
-        experience.setEndDate(request.getEndDate());
-        experience.setCurrent(request.isCurrent());
+        Experience experience = experienceRepository.findByIdAndCv(id, cv)
+                .orElseThrow(ExperienceNotFoundException::new);
+
+        experience.setCompanyName(request.companyName());
+        experience.setPosition(request.position());
+        experience.setExperienceType(request.experienceType());
+        experience.setDescription(request.description());
+        experience.setStartDate(request.startDate());
+        experience.setEndDate(request.endDate());
+        experience.setCurrent(request.current());
 
         return mapToResponse(experienceRepository.save(experience));
     }
 
-    public void delete(Long id) {
-        Experience experience = getExperienceAndVerifyOwnership(id);
+    @Transactional
+    public void delete(Long id, User currentUser) {
+        CV cv = getUserCV(currentUser);
+
+        Experience experience = experienceRepository.findByIdAndCv(id, cv)
+                .orElseThrow(ExperienceNotFoundException::new);
+
         experienceRepository.delete(experience);
     }
 
-    private Experience getExperienceAndVerifyOwnership(Long id) {
-        Experience experience = experienceRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experience not found"));
-
-        CV cv = getAuthenticatedUserCV();
-
-        if (!experience.getCv().getId().equals(cv.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
-        }
-
-        return experience;
+    private CV getUserCV(User currentUser) {
+        return cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
     }
 
-    private CV getAuthenticatedUserCV() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found — create your CV first"));
-    }
-
-    private ExperienceResponse mapToResponse(Experience e) {
+    private ExperienceResponse mapToResponse(Experience experience) {
         return new ExperienceResponse(
-                e.getId(),
-                e.getCompanyName(),
-                e.getPosition(),
-                e.getDescription(),
-                e.getStartDate(),
-                e.getEndDate(),
-                e.isCurrent()
+                experience.getId(),
+                experience.getCompanyName(),
+                experience.getPosition(),
+                experience.getExperienceType(),
+                experience.getDescription(),
+                experience.getStartDate(),
+                experience.getEndDate(),
+                experience.isCurrent()
         );
     }
 }

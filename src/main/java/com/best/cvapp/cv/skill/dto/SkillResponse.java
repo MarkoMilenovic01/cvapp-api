@@ -1,12 +1,11 @@
 package com.best.cvapp.cv.skill.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.best.cvapp.cv.skill.SkillLevel;
+import com.best.cvapp.cv.skill.SkillName;
 
-@Getter
-@AllArgsConstructor
-public class SkillResponse {
-    private Long id;
-    private String name;
-    private String level;
+public record SkillResponse(
+        Long id,
+        SkillName name,
+        SkillLevel level
+) {
 }

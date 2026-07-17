@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,7 +20,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
+class CredentialsAuthControllerTest extends AbstractIntegrationTest {
+
+    private static final String AUTH_URL = "/api/auth";
+    private static final String TEST_EMAIL = "test@best.com";
+    private static final String TEST_PASSWORD = "Test@1234";
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,60 +46,37 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRegisterSuccessfully() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(registerRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
     void shouldFailRegisterWithDuplicateEmail() throws Exception {
-        register("test@best.com", "Test@1234");
+        register(TEST_EMAIL, TEST_PASSWORD);
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(registerRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void shouldFailRegisterWithInvalidEmail() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("not-an-email", "Test@1234"))))
+                        .content(toJson(registerRequest("not-an-email", TEST_PASSWORD))))
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void shouldFailRegisterWithShortPassword() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+    @ParameterizedTest
+    @ValueSource(strings = {"T@1", "test@1234", "Test@abcd", "Test1234"})
+    void shouldFailRegisterWithInvalidPassword(String invalidPassword) throws Exception {
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "T@1"))))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void shouldFailRegisterWithNoUppercase() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "test@1234"))))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void shouldFailRegisterWithNoDigit() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "Test@abcd"))))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void shouldFailRegisterWithNoSpecialChar() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "Test1234"))))
+                        .content(toJson(registerRequest(TEST_EMAIL, invalidPassword))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -101,10 +84,10 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldVerifyEmailSuccessfully() throws Exception {
-        register("test@best.com", "Test@1234");
-        String token = fetchVerificationToken("test@best.com");
+        register(TEST_EMAIL, TEST_PASSWORD);
+        String token = fetchVerificationToken(TEST_EMAIL);
 
-        mockMvc.perform(post("/api/auth/verify-email")
+        mockMvc.perform(post(AUTH_URL + "/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new VerifyEmailRequest(token))))
                 .andExpect(status().isNoContent());
@@ -112,7 +95,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailVerifyWithInvalidToken() throws Exception {
-        mockMvc.perform(post("/api/auth/verify-email")
+        mockMvc.perform(post(AUTH_URL + "/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new VerifyEmailRequest("not-a-real-token"))))
                 .andExpect(status().isBadRequest());
@@ -120,16 +103,16 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailVerifyWithExpiredToken() throws Exception {
-        register("test@best.com", "Test@1234");
-        String token = fetchVerificationToken("test@best.com");
+        register(TEST_EMAIL, TEST_PASSWORD);
+        String token = fetchVerificationToken(TEST_EMAIL);
 
         jdbcTemplate.update("""
         UPDATE email_verification_tokens
         SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute'
         WHERE token = ?
-        """, token);
+        """, DigestUtils.sha256Hex(token));
 
-        mockMvc.perform(post("/api/auth/verify-email")
+        mockMvc.perform(post(AUTH_URL + "/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new VerifyEmailRequest(token))))
                 .andExpect(status().isBadRequest());
@@ -139,11 +122,11 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        registerAndVerify(TEST_EMAIL, TEST_PASSWORD);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(loginRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
@@ -152,19 +135,19 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailLoginWithWrongPassword() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        registerAndVerify(TEST_EMAIL, TEST_PASSWORD);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("test@best.com", "Wrong@1234"))))
+                        .content(toJson(loginRequest(TEST_EMAIL, "Wrong@1234"))))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldFailLoginWithNonExistentEmail() throws Exception {
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("nobody@best.com", "Test@1234"))))
+                        .content(toJson(loginRequest("nobody@best.com", TEST_PASSWORD))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -172,9 +155,9 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRefreshTokenSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin("test@best.com", "Test@1234"));
+        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post(AUTH_URL + "/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isOk())
@@ -185,7 +168,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailRefreshWithInvalidToken() throws Exception {
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post(AUTH_URL + "/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest("invalid-token"))))
                 .andExpect(status().isUnauthorized());
@@ -193,7 +176,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailRefreshWithExpiredRefreshToken() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin("test@best.com", "Test@1234"));
+        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         jdbcTemplate.update("""
         UPDATE refresh_tokens
@@ -201,7 +184,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
         WHERE token = ?
         """, DigestUtils.sha256Hex(refreshToken));
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post(AUTH_URL + "/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isUnauthorized());
@@ -211,9 +194,9 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldLogoutSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin("test@best.com", "Test@1234"));
+        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
-        mockMvc.perform(post("/api/auth/logout")
+        mockMvc.perform(post(AUTH_URL + "/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isNoContent());
@@ -221,14 +204,14 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldFailRefreshAfterLogout() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin("test@best.com", "Test@1234"));
+        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
-        mockMvc.perform(post("/api/auth/logout")
+        mockMvc.perform(post(AUTH_URL + "/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post(AUTH_URL + "/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new RefreshTokenRequest(refreshToken))))
                 .andExpect(status().isUnauthorized());
@@ -258,7 +241,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldAllowAccessWithValidToken() throws Exception {
-        String accessToken = extractAccessToken(registerVerifyAndLogin("test@best.com", "Test@1234"));
+        String accessToken = extractAccessToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         mockMvc.perform(get("/api/user/cv")
                         .header("Authorization", "Bearer " + accessToken))
@@ -267,7 +250,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRejectCompanyEndpointWithUserRole() throws Exception {
-        String userToken = extractAccessToken(registerVerifyAndLogin("user@best.com", "Test@1234"));
+        String userToken = extractAccessToken(registerVerifyAndLogin("user@best.com", TEST_PASSWORD));
 
         mockMvc.perform(get("/api/company/me")
                         .header("Authorization", "Bearer " + userToken))
@@ -276,7 +259,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRejectAdminEndpointWithUserRole() throws Exception {
-        String userToken = extractAccessToken(registerVerifyAndLogin("user@best.com", "Test@1234"));
+        String userToken = extractAccessToken(registerVerifyAndLogin("user@best.com", TEST_PASSWORD));
 
         mockMvc.perform(get("/api/admin/users")
                         .header("Authorization", "Bearer " + userToken))
@@ -284,22 +267,13 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldAllowUserEndpointWithValidUserToken() throws Exception {
-        String userToken = extractAccessToken(registerVerifyAndLogin("user@best.com", "Test@1234"));
-
-        mockMvc.perform(get("/api/user/cv")
-                        .header("Authorization", "Bearer " + userToken))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
     void shouldAllowLoginEvenWithInvalidAuthorizationHeader() throws Exception {
-        registerAndVerify("test@best.com", "Test@1234");
+        registerAndVerify(TEST_EMAIL, TEST_PASSWORD);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(AUTH_URL + "/login")
                         .header("Authorization", "Bearer invalid-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(loginRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(loginRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
@@ -308,10 +282,10 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldAllowRegisterEvenWithInvalidAuthorizationHeader() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post(AUTH_URL + "/register")
                         .header("Authorization", "Bearer invalid-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(registerRequest("test@best.com", "Test@1234"))))
+                        .content(toJson(registerRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").exists());
     }
@@ -319,7 +293,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private MvcResult register(String email, String password) throws Exception {
-        return mockMvc.perform(post("/api/auth/register")
+        return mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(registerRequest(email, password))))
                 .andExpect(status().isOk())
@@ -327,17 +301,13 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
     }
 
     private String fetchVerificationToken(String email) {
-        return jdbcTemplate.queryForObject("""
-            SELECT t.token FROM email_verification_tokens t
-            JOIN users u ON u.id = t.user_id
-            WHERE u.email = ?
-            """, String.class, email);
+        return storeKnownVerificationToken(jdbcTemplate, email);
     }
 
     private void verifyEmail(String email) throws Exception {
         String token = fetchVerificationToken(email);
 
-        mockMvc.perform(post("/api/auth/verify-email")
+        mockMvc.perform(post(AUTH_URL + "/verify-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new VerifyEmailRequest(token))))
                 .andExpect(status().isNoContent());
@@ -349,7 +319,7 @@ public class CredentialsAuthControllerTest extends AbstractIntegrationTest {
     }
 
     private MvcResult login(String email, String password) throws Exception {
-        return mockMvc.perform(post("/api/auth/login")
+        return mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(loginRequest(email, password))))
                 .andExpect(status().isOk())

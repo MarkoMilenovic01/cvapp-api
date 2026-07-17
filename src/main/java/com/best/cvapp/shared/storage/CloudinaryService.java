@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +16,11 @@ public class CloudinaryService {
 
     private static final long MAX_IMAGE_SIZE = 5L  * 1024 * 1024;  // 5 MB
     private static final long MAX_PDF_SIZE   = 10L * 1024 * 1024;  // 10 MB
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+    );
 
     private final Cloudinary cloudinary;
 
@@ -103,10 +109,52 @@ public class CloudinaryService {
         if (file == null || file.isEmpty())
             throw new IllegalArgumentException("File must not be empty");
         String ct = file.getContentType();
-        if (ct == null || !ct.startsWith("image/"))
+        if (ct == null || !ALLOWED_IMAGE_TYPES.contains(ct))
             throw new IllegalArgumentException("Only image files are allowed (jpg, png, webp)");
         if (file.getSize() > MAX_IMAGE_SIZE)
             throw new IllegalArgumentException("Image must be smaller than 5 MB");
+        try {
+            if (!hasAllowedImageSignature(file.getBytes())) {
+                throw new IllegalArgumentException("File content is not a valid jpg, png, or webp image");
+            }
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Unable to read image file", ex);
+        }
+    }
+
+    private boolean hasAllowedImageSignature(byte[] bytes) {
+        return isJpeg(bytes) || isPng(bytes) || isWebp(bytes);
+    }
+
+    private boolean isJpeg(byte[] bytes) {
+        return bytes.length >= 3
+                && (bytes[0] & 0xFF) == 0xFF
+                && (bytes[1] & 0xFF) == 0xD8
+                && (bytes[2] & 0xFF) == 0xFF;
+    }
+
+    private boolean isPng(byte[] bytes) {
+        byte[] signature = {
+                (byte) 0x89, 0x50, 0x4E, 0x47,
+                0x0D, 0x0A, 0x1A, 0x0A
+        };
+        if (bytes.length < signature.length) {
+            return false;
+        }
+        for (int i = 0; i < signature.length; i++) {
+            if (bytes[i] != signature[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isWebp(byte[] bytes) {
+        return bytes.length >= 12
+                && bytes[0] == 'R' && bytes[1] == 'I'
+                && bytes[2] == 'F' && bytes[3] == 'F'
+                && bytes[8] == 'W' && bytes[9] == 'E'
+                && bytes[10] == 'B' && bytes[11] == 'P';
     }
 
     private void validatePdf(MultipartFile file) {

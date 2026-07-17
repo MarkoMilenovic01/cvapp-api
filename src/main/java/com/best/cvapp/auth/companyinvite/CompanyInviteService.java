@@ -16,6 +16,7 @@ import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,19 +28,14 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Handles inviting a company to join and turning that invite into an
- * account.
+ * Handles company invitations.
  *
  * Flow:
- * 1. Send invite   - admin-only. Reject if the email already has an
- *                      account, or already has a pending (non-expired,
- *                      unused) invite. Replace any stale invite, then
- *                      email a new token.
- * 2. Accept invite - check passwords match, validate the token (must
- *                      exist, be unused, and not be expired), re-check
- *                      the email is still free, create a COMPANY user
- *                      and its Company profile, mark the invite used,
- *                      and start a session.
+ * 1. Check that the email is available.
+ * 2. Create and email an invitation token.
+ * 3. Validate the token and passwords when the invite is accepted.
+ * 4. Create the company user and profile.
+ * 5. Mark the invite as used and create a session.
  */
 @Service
 @RequiredArgsConstructor
@@ -77,7 +73,7 @@ public class CompanyInviteService {
         CompanyInvite invite = CompanyInvite.builder()
                 .email(email)
                 .companyName(companyName)
-                .token(token)
+                .token(DigestUtils.sha256Hex(token))
                 .used(false)
                 .expiresAt(LocalDateTime.now().plusHours(expirationHours))
                 .build();
@@ -93,7 +89,7 @@ public class CompanyInviteService {
             throw new PasswordsDoNotMatchException();
         }
 
-        CompanyInvite invite = inviteRepository.findByToken(request.token())
+        CompanyInvite invite = inviteRepository.findByToken(DigestUtils.sha256Hex(request.token()))
                 .orElseThrow(InvalidOrExpiredInviteTokenException::new);
 
         if (invite.isUsed() || invite.isExpired()) {
@@ -112,11 +108,9 @@ public class CompanyInviteService {
                 .enabled(true)
                 .build();
 
-        try {
-            userRepository.saveAndFlush(user);
-        } catch (DataIntegrityViolationException ex) {
-            throw new EmailAlreadyInUseException();
-        }
+
+        userRepository.save(user);
+
 
         Company company = Company.builder()
                 .user(user)

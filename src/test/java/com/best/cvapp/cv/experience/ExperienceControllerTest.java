@@ -1,30 +1,34 @@
 package com.best.cvapp.cv.experience;
 
+import com.best.cvapp.AbstractIntegrationTest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.emailverification.dto.VerifyEmailRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class ExperienceControllerTest {
+class ExperienceControllerTest extends AbstractIntegrationTest {
 
-    private static final String TEST_PASSWORD = "Password123!";
+    private static final String TEST_PASSWORD = "Test@1234";
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -34,13 +38,14 @@ class ExperienceControllerTest {
     void setUp() throws Exception {
         jdbcTemplate.execute("""
                 TRUNCATE TABLE
+                email_verification_tokens,
                 favorite_cvs, cv_views, companies,
                 skills, experience, education, cvs,
                 refresh_tokens, users
                 RESTART IDENTITY CASCADE
                 """);
 
-        userToken = registerUserAndGetToken("user@best.com");
+        userToken = registerVerifyLoginAndGetAccessToken("user@best.com");
         createCV(userToken);
     }
 
@@ -57,11 +62,18 @@ class ExperienceControllerTest {
         mockMvc.perform(post("/api/user/cv/experience")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(experienceBody("BEST Niš", "Backend Developer", "Built REST APIs", true)))
-                .andExpect(status().isOk())
+                        .content(experienceBody(
+                                "BEST Niš",
+                                "Backend Developer",
+                                ExperienceType.INTERNSHIP,
+                                "Built REST APIs",
+                                true
+                        )))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.companyName").value("BEST Niš"))
                 .andExpect(jsonPath("$.position").value("Backend Developer"))
+                .andExpect(jsonPath("$.experienceType").value("INTERNSHIP"))
                 .andExpect(jsonPath("$.description").value("Built REST APIs"))
                 .andExpect(jsonPath("$.startDate").value("2025-01-01"))
                 .andExpect(jsonPath("$.current").value(true));
@@ -74,11 +86,18 @@ class ExperienceControllerTest {
         mockMvc.perform(put("/api/user/cv/experience/" + experienceId)
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(experienceBody("FERI", "Software Engineer", "Worked on backend systems", false)))
+                        .content(experienceBody(
+                                "FERI",
+                                "Software Engineer",
+                                ExperienceType.FULL_TIME,
+                                "Worked on backend systems",
+                                false
+                        )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(experienceId))
                 .andExpect(jsonPath("$.companyName").value("FERI"))
                 .andExpect(jsonPath("$.position").value("Software Engineer"))
+                .andExpect(jsonPath("$.experienceType").value("FULL_TIME"))
                 .andExpect(jsonPath("$.description").value("Worked on backend systems"))
                 .andExpect(jsonPath("$.current").value(false));
     }
@@ -104,8 +123,14 @@ class ExperienceControllerTest {
         mockMvc.perform(post("/api/user/cv/experience")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(experienceBody("Google", "Software Engineer", "Worked on large systems", false)))
-                .andExpect(status().isOk());
+                        .content(experienceBody(
+                                "Google",
+                                "Software Engineer",
+                                ExperienceType.FULL_TIME,
+                                "Worked on large systems",
+                                false
+                        )))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/user/cv/experience")
                         .header("Authorization", "Bearer " + userToken))
@@ -123,45 +148,100 @@ class ExperienceControllerTest {
     @Test
     void shouldFailAddExperienceWithoutCV() throws Exception {
         jdbcTemplate.execute("""
-            TRUNCATE TABLE
-            favorite_cvs, cv_views, companies,
-            skills, experience, education, cvs,
-            refresh_tokens, users
-            RESTART IDENTITY CASCADE
-            """);
+                TRUNCATE TABLE
+                email_verification_tokens,
+                favorite_cvs, cv_views, companies,
+                skills, experience, education, cvs,
+                refresh_tokens, users
+                RESTART IDENTITY CASCADE
+                """);
 
-        userToken = registerUserAndGetToken("user2@best.com");
+        String tokenWithoutCV = registerVerifyLoginAndGetAccessToken("user2@best.com");
+
+        mockMvc.perform(post("/api/user/cv/experience")
+                        .header("Authorization", "Bearer " + tokenWithoutCV)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(experienceBody(
+                                "BEST Niš",
+                                "Backend Developer",
+                                ExperienceType.INTERNSHIP,
+                                "Built REST APIs",
+                                true
+                        )))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldFailAddExperienceWithoutToken() throws Exception {
+        mockMvc.perform(post("/api/user/cv/experience")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(experienceBody(
+                                "BEST Niš",
+                                "Backend Developer",
+                                ExperienceType.INTERNSHIP,
+                                "Built REST APIs",
+                                true
+                        )))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldFailAddExperienceWithInvalidBody() throws Exception {
+        String body = """
+                {
+                  "companyName": "",
+                  "position": "",
+                  "experienceType": null,
+                  "description": "Built REST APIs",
+                  "startDate": "2025-01-01",
+                  "endDate": null,
+                  "current": true
+                }
+                """;
 
         mockMvc.perform(post("/api/user/cv/experience")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(experienceBody("BEST Niš", "Backend Developer", "Built REST APIs", true)))
-                .andExpect(status().isNotFound());
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 
     private Long addExperienceAndGetId() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/user/cv/experience")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(experienceBody("BEST Niš", "Backend Developer", "Built REST APIs", true)))
-                .andExpect(status().isOk())
+                        .content(experienceBody(
+                                "BEST Niš",
+                                "Backend Developer",
+                                ExperienceType.INTERNSHIP,
+                                "Built REST APIs",
+                                true
+                        )))
+                .andExpect(status().isCreated())
                 .andReturn();
 
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
         return json.get("id").asLong();
     }
 
-    private String experienceBody(String companyName, String position, String description, boolean current) {
+    private String experienceBody(
+            String companyName,
+            String position,
+            ExperienceType experienceType,
+            String description,
+            boolean current
+    ) {
         return """
                 {
                   "companyName": "%s",
                   "position": "%s",
+                  "experienceType": "%s",
                   "description": "%s",
                   "startDate": "2025-01-01",
                   "endDate": null,
                   "current": %s
                 }
-                """.formatted(companyName, position, description, current);
+                """.formatted(companyName, position, experienceType.name(), description, current);
     }
 
     private void createCV(String token) throws Exception {
@@ -173,10 +253,7 @@ class ExperienceControllerTest {
                   "address": "Maribor",
                   "summary": "Backend developer student",
                   "linkedinUrl": "https://linkedin.com/in/marko",
-                  "githubUrl": "https://github.com/marko",
-                  "skills": [],
-                  "education": [],
-                  "experience": []
+                  "githubUrl": "https://github.com/marko"
                 }
                 """;
 
@@ -187,26 +264,55 @@ class ExperienceControllerTest {
                 .andExpect(status().isOk());
     }
 
-    private String registerUserAndGetToken(String email) throws Exception {
-        String body = """
-                {
-                  "email": "%s",
-                  "password": "%s",
-                  "confirmPassword": "%s"
-                }
-                """.formatted(email, TEST_PASSWORD, TEST_PASSWORD);
+    // ── Auth helpers ──────────────────────────────────────────────────────────
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+    private String registerVerifyLoginAndGetAccessToken(String email) throws Exception {
+        register(email);
+        verifyEmail(email);
+
+        MvcResult loginResult = login(email);
+
+        return extractAccessToken(loginResult);
+    }
+
+    private void register(String email) throws Exception {
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(toJson(new RegisterRequest(email, TEST_PASSWORD, TEST_PASSWORD))))
                 .andExpect(status().isOk())
-                .andReturn();
+                .andExpect(jsonPath("$.message").exists());
+    }
 
-        return extractAccessToken(result);
+    private void verifyEmail(String email) throws Exception {
+        String token = fetchVerificationToken(email);
+
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new VerifyEmailRequest(token))))
+                .andExpect(status().isNoContent());
+    }
+
+    private MvcResult login(String email) throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new LoginRequest(email, TEST_PASSWORD))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").exists())
+                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andReturn();
+    }
+
+    private String fetchVerificationToken(String email) {
+        return storeKnownVerificationToken(jdbcTemplate, email);
     }
 
     private String extractAccessToken(MvcResult result) throws Exception {
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
         return json.get("accessToken").asText();
+    }
+
+    private String toJson(Object value) throws Exception {
+        return objectMapper.writeValueAsString(value);
     }
 }

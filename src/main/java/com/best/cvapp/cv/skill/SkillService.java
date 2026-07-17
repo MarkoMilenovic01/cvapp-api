@@ -2,81 +2,114 @@ package com.best.cvapp.cv.skill;
 
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.profile.exception.CVNotFoundException;
 import com.best.cvapp.cv.skill.dto.SkillRequest;
 import com.best.cvapp.cv.skill.dto.SkillResponse;
+import com.best.cvapp.cv.skill.exception.DuplicateSkillException;
+import com.best.cvapp.cv.skill.exception.SkillNotFoundException;
 import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Handles skills for the authenticated user's CV.
+ *
+ * Flow:
+ * 1. Load the CV belonging to the authenticated user.
+ * 2. List its skills.
+ * 3. Create or update a skill from the submitted name and level.
+ * 4. Verify that a skill belongs to the user's CV before changing it.
+ * 5. Return the saved skill or delete it.
+ */
 @Service
 @RequiredArgsConstructor
 public class SkillService {
 
     private final SkillRepository skillRepository;
     private final CVRepository cvRepository;
-    private final UserRepository userRepository;
 
-    public List<SkillResponse> getAll() {
-        CV cv = getAuthenticatedUserCV();
+    @Transactional(readOnly = true)
+    public List<SkillResponse> getAll(User currentUser) {
+        CV cv = getUserCV(currentUser);
+
         return skillRepository.findByCv(cv).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public SkillResponse add(SkillRequest request) {
-        CV cv = getAuthenticatedUserCV();
+    @Transactional
+    public SkillResponse add(
+            SkillRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
+
+        if (skillRepository.existsByCvAndName(cv, request.name())) {
+            throw new DuplicateSkillException();
+        }
 
         Skill skill = Skill.builder()
                 .cv(cv)
-                .name(request.getName())
-                .level(request.getLevel())
+                .name(request.name())
+                .level(request.level())
                 .build();
 
-        return mapToResponse(skillRepository.save(skill));
+        return save(skill);
     }
 
-    public SkillResponse update(Long id, SkillRequest request) {
-        Skill skill = getSkillAndVerifyOwnership(id);
+    @Transactional
+    public SkillResponse update(
+            Long id,
+            SkillRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
-        skill.setName(request.getName());
-        skill.setLevel(request.getLevel());
+        Skill skill = skillRepository.findByIdAndCv(id, cv)
+                .orElseThrow(SkillNotFoundException::new);
 
-        return mapToResponse(skillRepository.save(skill));
+        if (skillRepository.existsByCvAndNameAndIdNot(cv, request.name(), id)) {
+            throw new DuplicateSkillException();
+        }
+
+        skill.setName(request.name());
+        skill.setLevel(request.level());
+
+        return save(skill);
     }
 
-    public void delete(Long id) {
-        Skill skill = getSkillAndVerifyOwnership(id);
+    @Transactional
+    public void delete(Long id, User currentUser) {
+        CV cv = getUserCV(currentUser);
+
+        Skill skill = skillRepository.findByIdAndCv(id, cv)
+                .orElseThrow(SkillNotFoundException::new);
+
         skillRepository.delete(skill);
     }
 
-    private Skill getSkillAndVerifyOwnership(Long id) {
-        Skill skill = skillRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Skill not found"));
+    private CV getUserCV(User currentUser) {
+        return cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
+    }
 
-        CV cv = getAuthenticatedUserCV();
-
-        if (!skill.getCv().getId().equals(cv.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+    private SkillResponse save(Skill skill) {
+        try {
+            return mapToResponse(skillRepository.saveAndFlush(skill));
+        } catch (DataIntegrityViolationException ex) {
+            throw new DuplicateSkillException();
         }
-
-        return skill;
     }
 
-    private CV getAuthenticatedUserCV() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found — create your CV first"));
-    }
-
-    private SkillResponse mapToResponse(Skill s) {
-        return new SkillResponse(s.getId(), s.getName(), s.getLevel());
+    private SkillResponse mapToResponse(Skill skill) {
+        return new SkillResponse(
+                skill.getId(),
+                skill.getName(),
+                skill.getLevel()
+        );
     }
 }

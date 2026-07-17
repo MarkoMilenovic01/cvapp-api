@@ -7,10 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @RequiredArgsConstructor
 public class JobSpecification implements Specification<Job> {
+
+    private static final char LIKE_ESCAPE = '\\';
 
     private final JobSearchFilter filter;
 
@@ -20,35 +24,41 @@ public class JobSpecification implements Specification<Job> {
 
         // only active jobs
         predicates.add(cb.isTrue(root.get("active")));
+        predicates.add(cb.or(
+                cb.isNull(root.get("deadline")),
+                cb.greaterThanOrEqualTo(root.get("deadline"), LocalDate.now())
+        ));
 
-        if (hasText(filter.getKeyword())) {
-            String pattern = likePattern(filter.getKeyword());
+        if (hasText(filter.keyword())) {
+            String pattern = likePattern(filter.keyword());
             predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("title")),        pattern),
-                    cb.like(cb.lower(root.get("description")),  pattern),
-                    cb.like(cb.lower(root.get("requirements")), pattern)
+                    cb.like(cb.lower(root.get("title")),        pattern, LIKE_ESCAPE),
+                    cb.like(cb.lower(root.get("description")),  pattern, LIKE_ESCAPE),
+                    cb.like(cb.lower(root.get("requirements")), pattern, LIKE_ESCAPE)
             ));
         }
 
-        if (hasText(filter.getLocation())) {
+        if (hasText(filter.location())) {
             predicates.add(cb.like(
                     cb.lower(root.get("location")),
-                    likePattern(filter.getLocation())
+                    likePattern(filter.location()),
+                    LIKE_ESCAPE
             ));
         }
 
-        if (filter.getWorkMode() != null) {
-            predicates.add(cb.equal(root.get("workMode"), filter.getWorkMode()));
+        if (filter.workMode() != null) {
+            predicates.add(cb.equal(root.get("workMode"), filter.workMode()));
         }
 
-        if (filter.getEmploymentType() != null) {
-            predicates.add(cb.equal(root.get("employmentType"), filter.getEmploymentType()));
+        if (filter.employmentType() != null) {
+            predicates.add(cb.equal(root.get("employmentType"), filter.employmentType()));
         }
 
-        if (hasText(filter.getCompanyName())) {
+        if (hasText(filter.companyName())) {
             predicates.add(cb.like(
                     cb.lower(root.get("company").get("name")),
-                    likePattern(filter.getCompanyName())
+                    likePattern(filter.companyName()),
+                    LIKE_ESCAPE
             ));
         }
 
@@ -60,6 +70,10 @@ public class JobSpecification implements Specification<Job> {
     }
 
     private String likePattern(String value) {
-        return "%" + value.toLowerCase() + "%";
+        String escaped = value.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 }

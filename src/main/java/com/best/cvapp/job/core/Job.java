@@ -26,7 +26,7 @@ public class Job {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -35,14 +35,15 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String requirements;
 
+    @Column(length = 255)
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private EmploymentType employmentType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private WorkMode workMode;
 
     private LocalDate deadline;

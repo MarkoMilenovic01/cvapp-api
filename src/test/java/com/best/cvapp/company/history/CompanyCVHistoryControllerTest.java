@@ -1,5 +1,6 @@
 package com.best.cvapp.company.history;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
@@ -11,22 +12,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class CompanyCVHistoryControllerTest {
+class CompanyCVHistoryControllerTest extends AbstractIntegrationTest {
 
     private static final String TEST_PASSWORD = "Password123!";
 
@@ -144,6 +139,7 @@ class CompanyCVHistoryControllerTest {
         companyUser.setPassword(passwordEncoder.encode(TEST_PASSWORD));
         companyUser.setRole(Role.COMPANY);
         companyUser.setProvider(AuthProvider.LOCAL);
+        companyUser.setEnabled(true);
 
         userRepository.save(companyUser);
 
@@ -160,21 +156,15 @@ class CompanyCVHistoryControllerTest {
     }
 
     private String registerUserAndGetToken(String email) throws Exception {
-        String body = """
-                {
-                  "email": "%s",
-                  "password": "%s",
-                  "confirmPassword": "%s"
-                }
-                """.formatted(email, TEST_PASSWORD, TEST_PASSWORD);
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(TEST_PASSWORD));
+        user.setRole(Role.USER);
+        user.setProvider(AuthProvider.LOCAL);
+        user.setEnabled(true);
+        userRepository.save(user);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        return extractAccessToken(result);
+        return loginAndGetToken(email, TEST_PASSWORD);
     }
 
     private String loginAndGetToken(String email, String password) throws Exception {

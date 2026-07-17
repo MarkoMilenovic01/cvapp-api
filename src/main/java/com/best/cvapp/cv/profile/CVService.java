@@ -1,147 +1,130 @@
 package com.best.cvapp.cv.profile;
 
-import com.best.cvapp.cv.education.Education;
 import com.best.cvapp.cv.education.dto.EducationResponse;
-import com.best.cvapp.cv.experience.Experience;
 import com.best.cvapp.cv.experience.dto.ExperienceResponse;
 import com.best.cvapp.cv.profile.dto.CVRequest;
 import com.best.cvapp.cv.profile.dto.CVResponse;
-import com.best.cvapp.cv.skill.Skill;
+import com.best.cvapp.cv.profile.exception.CVNotFoundException;
+import com.best.cvapp.cv.project.dto.ProjectResponse;
 import com.best.cvapp.cv.skill.dto.SkillResponse;
+import com.best.cvapp.shared.storage.CloudinaryService;
 import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Handles the authenticated user's CV profile.
+ *
+ * Flow:
+ * 1. Load the CV belonging to the authenticated user.
+ * 2. Create a CV when one does not exist or update its profile details.
+ * 3. Include education, experience, skills, and projects in the response.
+ * 4. Delete stored profile files when the CV is removed.
+ * 5. Save or delete the CV.
+ */
 @Service
 @RequiredArgsConstructor
 public class CVService {
 
     private final CVRepository cvRepository;
-    private final UserRepository userRepository;
-
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
-    public CVResponse getMyCV() {
-        User user = getAuthenticatedUser();
-        CV cv = cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
+    public CVResponse getMyCV(User currentUser) {
+        CV cv = cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
+
         return mapToResponse(cv);
     }
 
     @Transactional
-    public CVResponse createOrUpdateCV(CVRequest request) {
-        User user = getAuthenticatedUser();
+    public CVResponse createOrUpdateCV(
+            CVRequest request,
+            User currentUser
+    ) {
+        CV cv = cvRepository.findByUser(currentUser)
+                .orElseGet(() -> CV.builder()
+                        .user(currentUser)
+                        .build());
 
-        CV cv = cvRepository.findByUser(user)
-                .orElse(CV.builder().user(user).build());
+        cv.setFirstName(request.firstName());
+        cv.setLastName(request.lastName());
+        cv.setPhone(request.phone());
+        cv.setAddress(request.address());
+        cv.setSummary(request.summary());
+        cv.setLinkedinUrl(request.linkedinUrl());
+        cv.setGithubUrl(request.githubUrl());
 
-        cv.setFirstName(request.getFirstName());
-        cv.setLastName(request.getLastName());
-        cv.setPhone(request.getPhone());
-        cv.setAddress(request.getAddress());
-        cv.setSummary(request.getSummary());
-        cv.setLinkedinUrl(request.getLinkedinUrl());
-        cv.setGithubUrl(request.getGithubUrl());
+        CV savedCV = cvRepository.save(cv);
 
-
-        // Update education
-        cv.getEducation().clear();
-        if (request.getEducation() != null) {
-            request.getEducation().forEach(e -> cv.getEducation().add(
-                    Education.builder()
-                            .cv(cv)
-                            .institution(e.getInstitution())
-                            .degree(e.getDegree())
-                            .fieldOfStudy(e.getFieldOfStudy())
-                            .startDate(e.getStartDate())
-                            .endDate(e.getEndDate())
-                            .current(e.isCurrent())
-                            .build()
-            ));
-        }
-
-        // Update experience
-        cv.getExperience().clear();
-        if (request.getExperience() != null) {
-            request.getExperience().forEach(e -> cv.getExperience().add(
-                    Experience.builder()
-                            .cv(cv)
-                            .companyName(e.getCompanyName())
-                            .position(e.getPosition())
-                            .description(e.getDescription())
-                            .startDate(e.getStartDate())
-                            .endDate(e.getEndDate())
-                            .current(e.isCurrent())
-                            .build()
-            ));
-        }
-
-        // Update skills
-        cv.getSkills().clear();
-        if (request.getSkills() != null) {
-            request.getSkills().forEach(s -> cv.getSkills().add(
-                    Skill.builder()
-                            .cv(cv)
-                            .name(s.getName())
-                            .level(s.getLevel())
-                            .build()
-            ));
-        }
-
-        cvRepository.save(cv);
-        return mapToResponse(cv);
+        return mapToResponse(savedCV);
     }
 
     @Transactional
-    public void deleteCV() {
-        User user = getAuthenticatedUser();
-        CV cv = cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
+    public void deleteCV(User currentUser) {
+        CV cv = cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
+
+        if (cv.getProfilePhotoId() != null) {
+            cloudinaryService.deleteImage(cv.getProfilePhotoId());
+        }
+
+        if (cv.getPdfPublicId() != null) {
+            cloudinaryService.deletePdf(cv.getPdfPublicId());
+        }
+
         cvRepository.delete(cv);
-    }
-
-    private User getAuthenticatedUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
     public CVResponse mapToResponse(CV cv) {
         List<EducationResponse> education = cv.getEducation().stream()
-                .map(e -> new EducationResponse(
-                        e.getId(),
-                        e.getInstitution(),
-                        e.getDegree(),
-                        e.getFieldOfStudy(),
-                        e.getStartDate(),
-                        e.getEndDate(),
-                        e.isCurrent()
-                )).toList();
+                .map(entry -> new EducationResponse(
+                        entry.getId(),
+                        entry.getInstitution(),
+                        entry.getDegree(),
+                        entry.getFieldOfStudy(),
+                        entry.getStartDate(),
+                        entry.getEndDate(),
+                        entry.isCurrent()
+                ))
+                .toList();
 
         List<ExperienceResponse> experience = cv.getExperience().stream()
-                .map(e -> new ExperienceResponse(
-                        e.getId(),
-                        e.getCompanyName(),
-                        e.getPosition(),
-                        e.getDescription(),
-                        e.getStartDate(),
-                        e.getEndDate(),
-                        e.isCurrent()
-                )).toList();
+                .map(entry -> new ExperienceResponse(
+                        entry.getId(),
+                        entry.getCompanyName(),
+                        entry.getPosition(),
+                        entry.getExperienceType(),
+                        entry.getDescription(),
+                        entry.getStartDate(),
+                        entry.getEndDate(),
+                        entry.isCurrent()
+                ))
+                .toList();
 
         List<SkillResponse> skills = cv.getSkills().stream()
-                .map(s -> new SkillResponse(
-                        s.getId(),
-                        s.getName(),
-                        s.getLevel()
-                )).toList();
+                .map(entry -> new SkillResponse(
+                        entry.getId(),
+                        entry.getName(),
+                        entry.getLevel()
+                ))
+                .toList();
+
+        List<ProjectResponse> projects = cv.getProjects().stream()
+                .map(project -> new ProjectResponse(
+                        project.getId(),
+                        project.getName(),
+                        project.getDescription(),
+                        project.getProjectUrl(),
+                        project.getRepositoryUrl(),
+                        project.getStartDate(),
+                        project.getEndDate(),
+                        project.isCurrent()
+                ))
+                .toList();
 
         return new CVResponse(
                 cv.getId(),
@@ -154,6 +137,7 @@ public class CVService {
                 cv.getGithubUrl(),
                 education,
                 experience,
+                projects,
                 skills,
                 cv.getCreatedAt(),
                 cv.getProfilePhotoUrl(),

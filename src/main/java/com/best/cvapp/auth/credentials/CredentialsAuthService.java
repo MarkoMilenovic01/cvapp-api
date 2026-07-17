@@ -25,17 +25,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 
 /**
- * Handles login and registration with email and password.
+ * Handles registration and login with email and password.
  *
- * Flow:
- * 1. Register - check passwords    match, normalize email, reject if the email
- *                is already taken (pointing Google accounts to Google login
- *                instead), hash the password, save the user as disabled,
- *                and send a verification email. Returns a generic message,
- *                never confirming or denying account state to the caller.
- * 2. Login    - normalize email, authenticate through Spring Security
- *                (handles bad credentials and disabled accounts), then
- *                create a new session for the authenticated user.
+ * Registration flow:
+ * 1. Check that the passwords match.
+ * 2. Normalize the email and check that it is available.
+ * 3. Save the disabled user with an encoded password.
+ * 4. Send a verification email.
+ *
+ * Login flow:
+ * 1. Normalize the email.
+ * 2. Authenticate the user.
+ * 3. Create a session.
  */
 @Service
 @RequiredArgsConstructor
@@ -70,11 +71,8 @@ public class CredentialsAuthService {
                 .enabled(false)
                 .build();
 
-        try {
-            userRepository.saveAndFlush(user);
-        } catch (DataIntegrityViolationException ex) {
-            throw new EmailAlreadyInUseException();
-        }
+        userRepository.save(user);
+
 
         emailVerificationService.createAndSendVerification(user);
 

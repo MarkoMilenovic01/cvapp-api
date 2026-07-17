@@ -1,18 +1,29 @@
 package com.best.cvapp.company.favorite;
 
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
+import com.best.cvapp.company.favorite.exception.CVAlreadyFavoritedException;
+import com.best.cvapp.company.favorite.exception.CVNotFavoritedException;
+import com.best.cvapp.company.favorite.exception.FavoriteCVNotFoundException;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyProfileService;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Handles favorite CVs for the authenticated company.
+ *
+ * Flow:
+ * 1. Load the company belonging to the authenticated user.
+ * 2. Validate that the requested CV exists.
+ * 3. Add the CV to favorites unless it is already present.
+ * 4. Remove an existing favorite when requested.
+ * 5. Return the company's favorite CV summaries.
+ */
 @Service
 @RequiredArgsConstructor
 public class FavoriteCVService {
@@ -26,18 +37,12 @@ public class FavoriteCVService {
         Company company = companyProfileService.getAuthenticatedCompany();
 
         CV cv = cvRepository.findById(cvId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "CV not found"
-                ));
+                .orElseThrow(FavoriteCVNotFoundException::new);
 
         FavoriteCVId id = new FavoriteCVId(company.getId(), cv.getId());
 
         if (favoriteCVRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "CV already in favorites"
-            );
+            throw new CVAlreadyFavoritedException();
         }
 
         FavoriteCV favorite = FavoriteCV.builder()
@@ -56,10 +61,7 @@ public class FavoriteCVService {
         FavoriteCVId id = new FavoriteCVId(company.getId(), cvId);
 
         if (!favoriteCVRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "CV not in favorites"
-            );
+            throw new CVNotFavoritedException();
         }
 
         favoriteCVRepository.deleteById(id);

@@ -2,7 +2,9 @@ package com.best.cvapp.company.cv;
 
 import com.best.cvapp.company.cv.dto.CVSearchRequest;
 import com.best.cvapp.company.cv.dto.CompanyCVSummaryResponse;
+import com.best.cvapp.company.cv.exception.CompanyCVPageSizeExceededException;
 import com.best.cvapp.cv.profile.dto.CVResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('COMPANY')")
 public class CompanyCVController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final CompanyCVService companyCVService;
 
 
@@ -24,6 +28,7 @@ public class CompanyCVController {
     public ResponseEntity<Page<CompanyCVSummaryResponse>> getAllCVs(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
     ) {
+        validatePageSize(pageable);
         return ResponseEntity.ok(companyCVService.getAllCVs(pageable));
     }
 
@@ -34,9 +39,16 @@ public class CompanyCVController {
 
     @GetMapping("/search")
     public ResponseEntity<Page<CompanyCVSummaryResponse>> searchCVs(
-            CVSearchRequest request,
+            @Valid @ModelAttribute CVSearchRequest request,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
     ) {
+        validatePageSize(pageable);
         return ResponseEntity.ok(companyCVService.searchCVs(request, pageable));
+    }
+
+    private void validatePageSize(Pageable pageable) {
+        if (pageable.getPageSize() > MAX_PAGE_SIZE) {
+            throw new CompanyCVPageSizeExceededException(MAX_PAGE_SIZE);
+        }
     }
 }

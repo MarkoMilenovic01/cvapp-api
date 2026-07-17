@@ -2,8 +2,11 @@ package com.best.cvapp.job.company;
 
 import com.best.cvapp.job.application.dto.JobApplicationResponse;
 import com.best.cvapp.job.application.dto.UpdateApplicationStatusRequest;
+import com.best.cvapp.job.company.dto.UpdateJobActiveRequest;
+import com.best.cvapp.job.core.JobPageSizeValidator;
 import com.best.cvapp.job.core.dto.JobRequest;
 import com.best.cvapp.job.core.dto.JobResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +29,7 @@ public class CompanyJobController {
     // ── Job Management ────────────────────────────────────────────────────────
 
     @PostMapping
-    public ResponseEntity<JobResponse> createJob(@RequestBody JobRequest request) {
+    public ResponseEntity<JobResponse> createJob(@Valid @RequestBody JobRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(companyJobService.createJob(request));
     }
@@ -34,6 +37,7 @@ public class CompanyJobController {
     @GetMapping
     public ResponseEntity<Page<JobResponse>> getMyJobs(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+        JobPageSizeValidator.validate(pageable);
         return ResponseEntity.ok(companyJobService.getMyJobs(pageable));
     }
 
@@ -45,8 +49,16 @@ public class CompanyJobController {
     @PutMapping("/{id}")
     public ResponseEntity<JobResponse> updateJob(
             @PathVariable Long id,
-            @RequestBody JobRequest request) {
+            @Valid @RequestBody JobRequest request) {
         return ResponseEntity.ok(companyJobService.updateJob(id, request));
+    }
+
+    @PatchMapping("/{id}/active")
+    public ResponseEntity<JobResponse> updateJobActiveState(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateJobActiveRequest request
+    ) {
+        return ResponseEntity.ok(companyJobService.updateJobActiveState(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -66,7 +78,7 @@ public class CompanyJobController {
     @PatchMapping("/applications/{applicationId}/status")
     public ResponseEntity<JobApplicationResponse> updateApplicationStatus(
             @PathVariable Long applicationId,
-            @RequestBody UpdateApplicationStatusRequest request) {
+            @Valid @RequestBody UpdateApplicationStatusRequest request) {
         return ResponseEntity.ok(companyJobService.updateApplicationStatus(applicationId, request));
     }
 }

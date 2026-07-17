@@ -10,21 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Creates, refreshes, and ends user sessions.
- *
- * A session consists of a short-lived access token and a refresh token
- * stored in the database (hashed). Refresh tokens are rotated on every
- * use: the old one is deleted and a new one is issued. Access tokens
- * can't be canceled early - once issued, they stay valid until they
- * expire naturally.
+ * Handles authenticated sessions.
  *
  * Flow:
- * 1. Create session - reject disabled accounts, issue an access token
- *                       and a refresh token.
- * 2. Refresh         - validate the refresh token, reject disabled
- *                       accounts (revoking their tokens), rotate the
- *                       refresh token, and issue a new access token.
- * 3. Logout          - validate the refresh token and delete it.
+ * 1. Create an access token and refresh token after login.
+ * 2. Validate and rotate the refresh token when refreshing a session.
+ * 3. Delete the refresh token when logging out.
  */
 @Service
 @RequiredArgsConstructor

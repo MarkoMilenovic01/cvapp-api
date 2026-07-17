@@ -1,15 +1,17 @@
 package com.best.cvapp.admin.job;
 
 import com.best.cvapp.admin.job.dto.AdminJobResponse;
+import com.best.cvapp.admin.job.exception.AdminCannotActivateExpiredJobException;
+import com.best.cvapp.admin.job.exception.AdminJobNotFoundException;
 import com.best.cvapp.job.core.Job;
 import com.best.cvapp.job.core.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,13 @@ public class AdminJobService {
     @Transactional
     public AdminJobResponse toggleActive(Long id) {
         Job job = findJob(id);
+
+        if (!job.isActive()
+                && job.getDeadline() != null
+                && job.getDeadline().isBefore(LocalDate.now())) {
+            throw new AdminCannotActivateExpiredJobException();
+        }
+
         job.setActive(!job.isActive());
         return toResponse(jobRepository.save(job));
     }
@@ -41,8 +50,7 @@ public class AdminJobService {
 
     private Job findJob(Long id) {
         return jobRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(AdminJobNotFoundException::new);
     }
 
     private AdminJobResponse toResponse(Job job) {

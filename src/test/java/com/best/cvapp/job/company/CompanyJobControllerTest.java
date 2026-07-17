@@ -1,5 +1,6 @@
 package com.best.cvapp.job.company;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
@@ -12,22 +13,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class CompanyJobControllerTest {
+class CompanyJobControllerTest extends AbstractIntegrationTest {
 
     private static final String TEST_PASSWORD = "Password123!";
 
@@ -71,6 +66,61 @@ class CompanyJobControllerTest {
     }
 
     @Test
+    void shouldRejectInvalidJobRequest() throws Exception {
+        mockMvc.perform(post("/api/company/jobs")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "   ",
+                                  "description": "   ",
+                                  "employmentType": null,
+                                  "workMode": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldDeactivateAndReactivateJob() throws Exception {
+        Long jobId = createJobAndGetId("Backend Developer Intern", "Maribor");
+
+        mockMvc.perform(patch("/api/company/jobs/" + jobId + "/active")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+
+        mockMvc.perform(patch("/api/company/jobs/" + jobId + "/active")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    void shouldRejectMissingActiveState() throws Exception {
+        Long jobId = createJobAndGetId("Backend Developer Intern", "Maribor");
+
+        mockMvc.perform(patch("/api/company/jobs/" + jobId + "/active")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectCompanyManagedApplicantStatus() throws Exception {
+        mockMvc.perform(patch("/api/company/jobs/applications/999/status")
+                        .header("Authorization", "Bearer " + companyToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPLIED\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldGetMyJobsSuccessfully() throws Exception {
         createJobAndGetId("Backend Developer Intern", "Maribor");
 
@@ -79,6 +129,14 @@ class CompanyJobControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].title").value("Backend Developer Intern"));
+    }
+
+    @Test
+    void shouldRejectJobPageSizeAboveMaximum() throws Exception {
+        mockMvc.perform(get("/api/company/jobs")
+                        .param("size", "101")
+                        .header("Authorization", "Bearer " + companyToken))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -261,6 +319,7 @@ class CompanyJobControllerTest {
         companyUser.setPassword(passwordEncoder.encode(TEST_PASSWORD));
         companyUser.setRole(Role.COMPANY);
         companyUser.setProvider(AuthProvider.LOCAL);
+        companyUser.setEnabled(true);
 
         userRepository.save(companyUser);
 
@@ -277,21 +336,15 @@ class CompanyJobControllerTest {
     }
 
     private String registerUserAndGetToken(String email) throws Exception {
-        String body = """
-                {
-                  "email": "%s",
-                  "password": "%s",
-                  "confirmPassword": "%s"
-                }
-                """.formatted(email, TEST_PASSWORD, TEST_PASSWORD);
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(TEST_PASSWORD));
+        user.setRole(Role.USER);
+        user.setProvider(AuthProvider.LOCAL);
+        user.setEnabled(true);
+        userRepository.save(user);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        return extractAccessToken(result);
+        return loginAndGetToken(email, TEST_PASSWORD);
     }
 
     private void createCV(String token) throws Exception {
@@ -323,6 +376,7 @@ class CompanyJobControllerTest {
         companyUser.setPassword(passwordEncoder.encode(TEST_PASSWORD));
         companyUser.setRole(Role.COMPANY);
         companyUser.setProvider(AuthProvider.LOCAL);
+        companyUser.setEnabled(true);
 
         userRepository.save(companyUser);
 

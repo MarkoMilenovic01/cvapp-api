@@ -2,15 +2,24 @@ package com.best.cvapp.cv.upload;
 
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.profile.exception.CVNotFoundException;
 import com.best.cvapp.shared.storage.CloudinaryService;
 import com.best.cvapp.shared.storage.UploadResponse;
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Handles profile photo and PDF uploads for the authenticated user's CV.
+ *
+ * Flow:
+ * 1. Load the CV belonging to the authenticated user.
+ * 2. Upload the photo or PDF to its deterministic Cloudinary location.
+ * 3. Store the uploaded file's URL and public ID on the CV.
+ * 4. Clear the stored file details when the user removes a file.
+ * 5. Delete removed files from Cloudinary.
+ */
 @Service
 @RequiredArgsConstructor
 public class CVUploadService {
@@ -18,17 +27,14 @@ public class CVUploadService {
     private final CloudinaryService cloudinaryService;
     private final CVRepository cvRepository;
 
-    // ── Profile photo ─────────────────────────────────────────────────────────
+    public UploadResponse uploadPhoto(
+            MultipartFile file,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
-    public UploadResponse uploadPhoto(MultipartFile file, User currentUser) {
-        CV cv = getCvForUser(currentUser);
-
-        if (cv.getProfilePhotoId() != null) {
-            cloudinaryService.deleteImage(cv.getProfilePhotoId());
-        }
-
-        CloudinaryService.UploadResult result = cloudinaryService.uploadCvProfilePhoto(file, cv.getId());
-
+        CloudinaryService.UploadResult result =
+                cloudinaryService.uploadCvProfilePhoto(file, cv.getId());
         cv.setProfilePhotoUrl(result.url());
         cv.setProfilePhotoId(result.publicId());
         cvRepository.save(cv);
@@ -37,27 +43,25 @@ public class CVUploadService {
     }
 
     public void deletePhoto(User currentUser) {
-        CV cv = getCvForUser(currentUser);
-
-        if (cv.getProfilePhotoId() != null) {
-            cloudinaryService.deleteImage(cv.getProfilePhotoId());
-            cv.setProfilePhotoUrl(null);
-            cv.setProfilePhotoId(null);
-            cvRepository.save(cv);
+        CV cv = getUserCV(currentUser);
+        String photoId = cv.getProfilePhotoId();
+        if (photoId == null) {
+            return;
         }
+        cv.setProfilePhotoUrl(null);
+        cv.setProfilePhotoId(null);
+        cvRepository.save(cv);
+        cloudinaryService.deleteImage(photoId);
     }
 
-    // ── PDF ───────────────────────────────────────────────────────────────────
+    public UploadResponse uploadPdf(
+            MultipartFile file,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
-    public UploadResponse uploadPdf(MultipartFile file, User currentUser) {
-        CV cv = getCvForUser(currentUser);
-
-        if (cv.getPdfPublicId() != null) {
-            cloudinaryService.deletePdf(cv.getPdfPublicId());
-        }
-
-        CloudinaryService.UploadResult result = cloudinaryService.uploadCvPdf(file, cv.getId());
-
+        CloudinaryService.UploadResult result =
+                cloudinaryService.uploadCvPdf(file, cv.getId());
         cv.setPdfUrl(result.url());
         cv.setPdfPublicId(result.publicId());
         cvRepository.save(cv);
@@ -66,21 +70,19 @@ public class CVUploadService {
     }
 
     public void deletePdf(User currentUser) {
-        CV cv = getCvForUser(currentUser);
-
-        if (cv.getPdfPublicId() != null) {
-            cloudinaryService.deletePdf(cv.getPdfPublicId());
-            cv.setPdfUrl(null);
-            cv.setPdfPublicId(null);
-            cvRepository.save(cv);
+        CV cv = getUserCV(currentUser);
+        String pdfPublicId = cv.getPdfPublicId();
+        if (pdfPublicId == null) {
+            return;
         }
+        cv.setPdfUrl(null);
+        cv.setPdfPublicId(null);
+        cvRepository.save(cv);
+        cloudinaryService.deletePdf(pdfPublicId);
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────────
-
-    private CV getCvForUser(User user) {
-        return cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "CV not found — create your CV first"));
+    private CV getUserCV(User currentUser) {
+        return cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
     }
 }

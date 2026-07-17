@@ -1,5 +1,9 @@
 package com.best.cvapp.cv.upload;
 
+import com.best.cvapp.AbstractIntegrationTest;
+import com.best.cvapp.auth.credentials.dto.LoginRequest;
+import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.emailverification.dto.VerifyEmailRequest;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.shared.storage.CloudinaryService;
@@ -8,42 +12,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class CVUploadControllerTest {
+class CVUploadControllerTest extends AbstractIntegrationTest {
 
-    private static final String TEST_PASSWORD = "Password123!";
+    private static final String TEST_PASSWORD = "Test@1234";
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private JdbcTemplate jdbcTemplate;
-    @Autowired private CVRepository cvRepository;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private CVRepository cvRepository;
 
     @MockitoBean
     private CloudinaryService cloudinaryService;
@@ -57,13 +60,14 @@ class CVUploadControllerTest {
     void setUp() throws Exception {
         jdbcTemplate.execute("""
                 TRUNCATE TABLE
+                email_verification_tokens,
                 favorite_cvs, cv_views, companies,
                 skills, experience, education, cvs,
                 refresh_tokens, users
                 RESTART IDENTITY CASCADE
                 """);
 
-        userToken = registerUserAndGetToken("user@best.com");
+        userToken = registerVerifyLoginAndGetAccessToken("user@best.com");
         cvId = createCV(userToken);
     }
 
@@ -100,7 +104,7 @@ class CVUploadControllerTest {
     void shouldReplaceExistingCvProfilePhotoSuccessfully() throws Exception {
         CV cv = cvRepository.findById(cvId).orElseThrow();
         cv.setProfilePhotoUrl("https://res.cloudinary.com/test/old-profile.png");
-        cv.setProfilePhotoId("cv_photos/old");
+        cv.setProfilePhotoId("cv_photos/1");
         cvRepository.save(cv);
 
         MockMultipartFile file = new MockMultipartFile(
@@ -113,7 +117,7 @@ class CVUploadControllerTest {
         when(cloudinaryService.uploadCvProfilePhoto(any(MultipartFile.class), eq(cvId)))
                 .thenReturn(new CloudinaryService.UploadResult(
                         "https://res.cloudinary.com/test/new-profile.png",
-                        "cv_photos/new"
+                        "cv_photos/1"
                 ));
 
         mockMvc.perform(multipart("/api/user/cv/photo")
@@ -125,9 +129,9 @@ class CVUploadControllerTest {
         CV updatedCv = cvRepository.findById(cvId).orElseThrow();
 
         assertThat(updatedCv.getProfilePhotoUrl()).isEqualTo("https://res.cloudinary.com/test/new-profile.png");
-        assertThat(updatedCv.getProfilePhotoId()).isEqualTo("cv_photos/new");
+        assertThat(updatedCv.getProfilePhotoId()).isEqualTo("cv_photos/1");
 
-        verify(cloudinaryService).deleteImage("cv_photos/old");
+        verify(cloudinaryService, never()).deleteImage(anyString());
         verify(cloudinaryService).uploadCvProfilePhoto(any(MultipartFile.class), eq(cvId));
     }
 
@@ -192,7 +196,7 @@ class CVUploadControllerTest {
     void shouldReplaceExistingCvPdfSuccessfully() throws Exception {
         CV cv = cvRepository.findById(cvId).orElseThrow();
         cv.setPdfUrl("https://res.cloudinary.com/test/old-cv.pdf");
-        cv.setPdfPublicId("cv_pdfs/old");
+        cv.setPdfPublicId("cv_pdfs/1");
         cvRepository.save(cv);
 
         MockMultipartFile file = new MockMultipartFile(
@@ -205,7 +209,7 @@ class CVUploadControllerTest {
         when(cloudinaryService.uploadCvPdf(any(MultipartFile.class), eq(cvId)))
                 .thenReturn(new CloudinaryService.UploadResult(
                         "https://res.cloudinary.com/test/new-cv.pdf",
-                        "cv_pdfs/new"
+                        "cv_pdfs/1"
                 ));
 
         mockMvc.perform(multipart("/api/user/cv/pdf")
@@ -217,9 +221,9 @@ class CVUploadControllerTest {
         CV updatedCv = cvRepository.findById(cvId).orElseThrow();
 
         assertThat(updatedCv.getPdfUrl()).isEqualTo("https://res.cloudinary.com/test/new-cv.pdf");
-        assertThat(updatedCv.getPdfPublicId()).isEqualTo("cv_pdfs/new");
+        assertThat(updatedCv.getPdfPublicId()).isEqualTo("cv_pdfs/1");
 
-        verify(cloudinaryService).deletePdf("cv_pdfs/old");
+        verify(cloudinaryService, never()).deletePdf(anyString());
         verify(cloudinaryService).uploadCvPdf(any(MultipartFile.class), eq(cvId));
     }
 
@@ -253,7 +257,7 @@ class CVUploadControllerTest {
 
     @Test
     void shouldReturn404WhenUploadingCvPhotoWithoutCV() throws Exception {
-        String tokenWithoutCv = registerUserAndGetToken("nocv@best.com");
+        String tokenWithoutCv = registerVerifyLoginAndGetAccessToken("nocv@best.com");
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -309,7 +313,7 @@ class CVUploadControllerTest {
 
     @Test
     void shouldReturn404WhenUploadingCvPdfWithoutCV() throws Exception {
-        String tokenWithoutCv = registerUserAndGetToken("nocvpdf@best.com");
+        String tokenWithoutCv = registerVerifyLoginAndGetAccessToken("nocvpdf@best.com");
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -383,26 +387,55 @@ class CVUploadControllerTest {
         return json.get("id").asLong();
     }
 
-    private String registerUserAndGetToken(String email) throws Exception {
-        String body = """
-                {
-                  "email": "%s",
-                  "password": "%s",
-                  "confirmPassword": "%s"
-                }
-                """.formatted(email, TEST_PASSWORD, TEST_PASSWORD);
+    // ── Auth helpers ──────────────────────────────────────────────────────────
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+    private String registerVerifyLoginAndGetAccessToken(String email) throws Exception {
+        register(email);
+        verifyEmail(email);
+
+        MvcResult loginResult = login(email);
+
+        return extractAccessToken(loginResult);
+    }
+
+    private void register(String email) throws Exception {
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(toJson(new RegisterRequest(email, TEST_PASSWORD, TEST_PASSWORD))))
                 .andExpect(status().isOk())
-                .andReturn();
+                .andExpect(jsonPath("$.message").exists());
+    }
 
-        return extractAccessToken(result);
+    private void verifyEmail(String email) throws Exception {
+        String token = fetchVerificationToken(email);
+
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new VerifyEmailRequest(token))))
+                .andExpect(status().isNoContent());
+    }
+
+    private MvcResult login(String email) throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new LoginRequest(email, TEST_PASSWORD))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").exists())
+                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andReturn();
+    }
+
+    private String fetchVerificationToken(String email) {
+        return storeKnownVerificationToken(jdbcTemplate, email);
     }
 
     private String extractAccessToken(MvcResult result) throws Exception {
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
         return json.get("accessToken").asText();
+    }
+
+    private String toJson(Object value) throws Exception {
+        return objectMapper.writeValueAsString(value);
     }
 }

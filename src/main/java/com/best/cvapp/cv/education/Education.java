@@ -19,14 +19,25 @@ public class Education {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cv_id", nullable = false)
     private CV cv;
 
+    @Column(nullable = false, length = 255)
     private String institution;
+
+    @Column(length = 255)
     private String degree;
+
+    @Column(name = "field_of_study", length = 255)
     private String fieldOfStudy;
+
+    @Column(name = "start_date")
     private LocalDate startDate;
+
+    @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Column
     private boolean current;
 }

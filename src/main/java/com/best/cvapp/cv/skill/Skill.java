@@ -5,7 +5,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "skills")
+@Table(
+        name = "skills",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_skills_cv_name",
+                columnNames = {"cv_id", "name"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,10 +23,15 @@ public class Skill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cv_id", nullable = false)
     private CV cv;
 
-    private String name;
-    private String level;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 100)
+    private SkillName name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SkillLevel level;
 }

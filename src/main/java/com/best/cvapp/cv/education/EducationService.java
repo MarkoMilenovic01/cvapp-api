@@ -2,97 +2,108 @@ package com.best.cvapp.cv.education;
 
 import com.best.cvapp.cv.education.dto.EducationRequest;
 import com.best.cvapp.cv.education.dto.EducationResponse;
+import com.best.cvapp.cv.education.exception.EducationNotFoundException;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.profile.exception.CVNotFoundException;
 import com.best.cvapp.user.User;
-import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Handles education entries for the authenticated user's CV.
+ *
+ * Flow:
+ * 1. Load the CV belonging to the authenticated user.
+ * 2. List its education entries in current and start-date order.
+ * 3. Create or update an education entry from the submitted details.
+ * 4. Verify that an entry belongs to the user's CV before changing it.
+ * 5. Return the saved entry or delete it.
+ */
 @Service
 @RequiredArgsConstructor
 public class EducationService {
 
     private final EducationRepository educationRepository;
     private final CVRepository cvRepository;
-    private final UserRepository userRepository;
 
-    public List<EducationResponse> getAll() {
-        CV cv = getAuthenticatedUserCV();
-        return educationRepository.findByCv(cv).stream()
+    @Transactional(readOnly = true)
+    public List<EducationResponse> getAll(User currentUser) {
+        CV cv = getUserCV(currentUser);
+
+        return educationRepository.findByCvOrderByCurrentDescStartDateDesc(cv).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public EducationResponse add(EducationRequest request) {
-        CV cv = getAuthenticatedUserCV();
+    @Transactional
+    public EducationResponse add(
+            EducationRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
         Education education = Education.builder()
                 .cv(cv)
-                .institution(request.getInstitution())
-                .degree(request.getDegree())
-                .fieldOfStudy(request.getFieldOfStudy())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .current(request.isCurrent())
+                .institution(request.institution())
+                .degree(request.degree())
+                .fieldOfStudy(request.fieldOfStudy())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .current(request.current())
                 .build();
 
         return mapToResponse(educationRepository.save(education));
     }
 
-    public EducationResponse update(Long id, EducationRequest request) {
-        Education education = getEducationAndVerifyOwnership(id);
+    @Transactional
+    public EducationResponse update(
+            Long id,
+            EducationRequest request,
+            User currentUser
+    ) {
+        CV cv = getUserCV(currentUser);
 
-        education.setInstitution(request.getInstitution());
-        education.setDegree(request.getDegree());
-        education.setFieldOfStudy(request.getFieldOfStudy());
-        education.setStartDate(request.getStartDate());
-        education.setEndDate(request.getEndDate());
-        education.setCurrent(request.isCurrent());
+        Education education = educationRepository.findByIdAndCv(id, cv)
+                .orElseThrow(EducationNotFoundException::new);
+
+        education.setInstitution(request.institution());
+        education.setDegree(request.degree());
+        education.setFieldOfStudy(request.fieldOfStudy());
+        education.setStartDate(request.startDate());
+        education.setEndDate(request.endDate());
+        education.setCurrent(request.current());
 
         return mapToResponse(educationRepository.save(education));
     }
 
-    public void delete(Long id) {
-        Education education = getEducationAndVerifyOwnership(id);
+    @Transactional
+    public void delete(Long id, User currentUser) {
+        CV cv = getUserCV(currentUser);
+
+        Education education = educationRepository.findByIdAndCv(id, cv)
+                .orElseThrow(EducationNotFoundException::new);
+
         educationRepository.delete(education);
     }
 
-    private Education getEducationAndVerifyOwnership(Long id) {
-        Education education = educationRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Education not found"));
-
-        CV cv = getAuthenticatedUserCV();
-
-        if (!education.getCv().getId().equals(cv.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
-        }
-
-        return education;
+    private CV getUserCV(User currentUser) {
+        return cvRepository.findByUser(currentUser)
+                .orElseThrow(CVNotFoundException::new);
     }
 
-    private CV getAuthenticatedUserCV() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return cvRepository.findByUser(user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found — create your CV first"));
-    }
-
-    private EducationResponse mapToResponse(Education e) {
+    private EducationResponse mapToResponse(Education education) {
         return new EducationResponse(
-                e.getId(),
-                e.getInstitution(),
-                e.getDegree(),
-                e.getFieldOfStudy(),
-                e.getStartDate(),
-                e.getEndDate(),
-                e.isCurrent()
+                education.getId(),
+                education.getInstitution(),
+                education.getDegree(),
+                education.getFieldOfStudy(),
+                education.getStartDate(),
+                education.getEndDate(),
+                education.isCurrent()
         );
     }
 }

@@ -15,6 +15,7 @@ import com.best.cvapp.auth.passwordreset.exception.UserNotFoundException;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,18 +26,14 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Handles the "forgot password" flow: requesting a reset link and using
- * it to set a new password.
+ * Handles password resets.
  *
  * Flow:
- * 1. Forgot password - normalize email, look up the account (Google
- *                        accounts are pointed to Google login instead),
- *                        replace any existing reset token, and email a
- *                        new one.
- * 2. Reset password  - check passwords match, validate the token (must
- *                        exist, be unused, and not be expired), update
- *                        the password, revoke all of the user's existing
- *                        sessions, and mark the token used.
+ * 1. Find the local account by email.
+ * 2. Create and email a reset token.
+ * 3. Validate the token and new passwords.
+ * 4. Update the password and remove existing sessions.
+ * 5. Mark the reset token as used.
  */
 @Service
 @RequiredArgsConstructor
@@ -68,7 +65,7 @@ public class PasswordResetService {
 
         PasswordResetToken resetToken = PasswordResetToken.builder()
                 .email(email)
-                .token(token)
+                .token(DigestUtils.sha256Hex(token))
                 .used(false)
                 .expiresAt(LocalDateTime.now().plusHours(passwordResetExpirationHours))
                 .build();
@@ -84,7 +81,8 @@ public class PasswordResetService {
             throw new PasswordsDoNotMatchException();
         }
 
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.token())
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(
+                        DigestUtils.sha256Hex(request.token()))
                 .orElseThrow(InvalidResetTokenException::new);
 
         if (resetToken.isUsed()) {

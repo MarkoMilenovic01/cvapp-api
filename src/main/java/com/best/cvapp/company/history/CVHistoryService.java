@@ -11,6 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Handles CV viewing history for authenticated companies.
+ *
+ * Flow:
+ * 1. Find the existing history entry for a company and CV.
+ * 2. Create the entry when the CV has not been viewed before.
+ * 3. Update the most recent viewing time.
+ * 4. Load the authenticated company's history in newest-first order.
+ * 5. Return the viewed CV summaries and timestamps.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

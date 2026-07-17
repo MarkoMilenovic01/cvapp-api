@@ -33,7 +33,7 @@ public class PasswordResetToken {
     private String email;
 
     @Column(nullable = false, unique = true)
-    @Size(max = 36)
+    @Size(max = 64)
     private String token;
 
     @Column(nullable = false)

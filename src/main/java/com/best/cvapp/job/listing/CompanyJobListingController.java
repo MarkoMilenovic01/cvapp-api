@@ -1,6 +1,7 @@
 package com.best.cvapp.job.listing;
 
 import com.best.cvapp.job.core.dto.JobResponse;
+import com.best.cvapp.job.core.JobPageSizeValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ public class CompanyJobListingController {
             @PathVariable Long companyId,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
     ) {
+        JobPageSizeValidator.validate(pageable);
         return ResponseEntity.ok(
                 jobListingService.getActiveJobsByCompany(companyId, pageable)
         );

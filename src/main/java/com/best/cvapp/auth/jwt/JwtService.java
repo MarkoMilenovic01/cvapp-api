@@ -13,25 +13,13 @@ import java.util.function.Function;
 
 
 /**
- * Service responsible for creating and validating JWT access tokens.
+ * Handles JWT access tokens.
  *
- * Flow when generating a token:
- * 1. Takes the authenticated user's details.
- * 2. Stores the user's email as the JWT subject.
- * 3. Stores the user's role as a custom claim.
- * 4. Adds issue time and expiration time.
- * 5. Signs the token using the configured secret key.
- *
- * Flow when validating a token:
- * 1. Verifies the token signature using the configured secret key.
- * 2. Extracts the email from the token subject.
- * 3. Checks that the email matches the loaded user.
- * 4. Checks that the user account is still enabled.
- * 5. Checks that the token has not expired.
- *
- * Access tokens are stateless. They are not stored in the database.
- * Once issued, they remain valid until expiration unless the user is
- * disabled, because validation also checks the user's enabled status.
+ * Flow:
+ * 1. Add the user's email, role, and expiration to a token.
+ * 2. Sign the token with the configured secret.
+ * 3. Read the email when the token is submitted.
+ * 4. Validate the user and expiration.
  */
 @Service
 public class JwtService {

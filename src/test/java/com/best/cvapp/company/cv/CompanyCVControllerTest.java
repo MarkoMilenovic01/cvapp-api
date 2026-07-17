@@ -1,7 +1,7 @@
 package com.best.cvapp.company.cv;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
-import com.best.cvapp.auth.credentials.dto.RegisterRequest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
@@ -12,22 +12,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-public class CompanyCVControllerTest {
+public class CompanyCVControllerTest extends AbstractIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -65,6 +59,14 @@ public class CompanyCVControllerTest {
                 .andExpect(jsonPath("$.content[0].lastName").value("Milenovic"))
                 .andExpect(jsonPath("$.content[0].summary").value("Backend developer student"))
                 .andExpect(jsonPath("$.content[0].favorite").value(false));
+    }
+
+    @Test
+    void shouldRejectPageSizeAboveMaximum() throws Exception {
+        mockMvc.perform(get("/api/company/cvs")
+                        .param("size", "101")
+                        .header("Authorization", "Bearer " + companyToken))
+                .andExpect(status().isBadRequest());
     }
 
     // ── GET /api/company/cvs/{id} ─────────────────────────────────────────────
@@ -122,10 +124,18 @@ public class CompanyCVControllerTest {
     }
 
     String registerUserAndGetToken(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        userRepository.save(User.builder()
+                .email(email)
+                .password(passwordEncoder.encode("Test@1234"))
+                .provider(AuthProvider.LOCAL)
+                .role(Role.USER)
+                .enabled(true)
+                .build());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new RegisterRequest(email, "Test@1234", "Test@1234"))))
+                                new LoginRequest(email, "Test@1234"))))
                 .andExpect(status().isOk())
                 .andReturn();
 

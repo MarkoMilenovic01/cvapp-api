@@ -4,10 +4,15 @@ import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.cv.education.Education;
 import com.best.cvapp.cv.experience.Experience;
+import com.best.cvapp.cv.experience.ExperienceType;
 import com.best.cvapp.cv.profile.CV;
 import com.best.cvapp.cv.profile.CVRepository;
+import com.best.cvapp.cv.project.Project;
+import com.best.cvapp.cv.project.ProjectRepository;
 import com.best.cvapp.cv.skill.Skill;
 import com.best.cvapp.auth.oauth.AuthProvider;
+import com.best.cvapp.cv.skill.SkillLevel;
+import com.best.cvapp.cv.skill.SkillName;
 import com.best.cvapp.job.application.JobApplication;
 import com.best.cvapp.job.application.JobApplicationRepository;
 import com.best.cvapp.job.core.*;
@@ -33,6 +38,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final CVRepository cvRepository;
+    private final ProjectRepository projectRepository;
     private final JobRepository jobRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final PasswordEncoder passwordEncoder;
@@ -41,7 +47,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     public void run(String... args) {
 
         // ── Users ─────────────────────────────────────────────────────────────
-        User admin      = seedUser("admin@cvapp.com",    "Password123!", Role.ADMIN);
+        seedUser("admin@cvapp.com", "Password123!", Role.ADMIN);
         User companyU1  = seedUser("company@cvapp.com",  "Password123!", Role.COMPANY);
         User companyU2  = seedUser("company2@cvapp.com", "Password123!", Role.COMPANY);
         User companyU3  = seedUser("company3@cvapp.com", "Password123!", Role.COMPANY);
@@ -76,11 +82,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "https://linkedin.com/in/marko-milenovic",
                 "https://github.com/marko-milenovic",
                 List.of(
-                        new SkillSeed("Java", "ADVANCED"),
-                        new SkillSeed("Spring Boot", "INTERMEDIATE"),
-                        new SkillSeed("PostgreSQL", "INTERMEDIATE"),
-                        new SkillSeed("Docker", "BEGINNER"),
-                        new SkillSeed("Git", "ADVANCED")
+                        new SkillSeed(SkillName.JAVA, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.SPRING_BOOT, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.POSTGRESQL, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.DOCKER, SkillLevel.BEGINNER),
+                        new SkillSeed(SkillName.GIT, SkillLevel.ADVANCED)
                 ),
                 List.of(
                         new EducationSeed(
@@ -95,10 +101,21 @@ public class DatabaseSeeder implements CommandLineRunner {
                         new ExperienceSeed(
                                 "StartupX",
                                 "Junior Backend Developer",
+                                ExperienceType.INTERNSHIP,
                                 "Built REST APIs using Spring Boot, managed PostgreSQL schemas and wrote unit tests.",
                                 LocalDate.of(2023, 6, 1),
                                 LocalDate.of(2023, 9, 30),
                                 false)
+                ),
+                List.of(
+                        new ProjectSeed(
+                                "CV Application Platform",
+                                "Full-stack job and CV platform built with Spring Boot, React, PostgreSQL and Docker.",
+                                null,
+                                "https://github.com/marko-milenovic/cvapp",
+                                LocalDate.of(2026, 1, 10),
+                                null,
+                                true)
                 )
         );
 
@@ -108,11 +125,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "https://linkedin.com/in/ana-petrovic",
                 "https://github.com/ana-petrovic",
                 List.of(
-                        new SkillSeed("React", "ADVANCED"),
-                        new SkillSeed("TypeScript", "INTERMEDIATE"),
-                        new SkillSeed("CSS", "ADVANCED"),
-                        new SkillSeed("Figma", "INTERMEDIATE"),
-                        new SkillSeed("Git", "INTERMEDIATE")
+                        new SkillSeed(SkillName.REACT, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.TYPESCRIPT, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.CSS, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.FIGMA, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.GIT, SkillLevel.INTERMEDIATE)
                 ),
                 List.of(
                         new EducationSeed(
@@ -127,9 +144,20 @@ public class DatabaseSeeder implements CommandLineRunner {
                         new ExperienceSeed(
                                 "Creative Agency d.o.o.",
                                 "Frontend Intern",
+                                ExperienceType.INTERNSHIP,
                                 "Developed responsive landing pages and component libraries in React.",
                                 LocalDate.of(2024, 2, 1),
                                 LocalDate.of(2024, 5, 31),
+                                false)
+                ),
+                List.of(
+                        new ProjectSeed(
+                                "Accessible UI Component Library",
+                                "Reusable and accessible React components documented for student projects.",
+                                null,
+                                "https://github.com/ana-petrovic/ui-components",
+                                LocalDate.of(2024, 6, 1),
+                                LocalDate.of(2024, 9, 30),
                                 false)
                 )
         );
@@ -140,11 +168,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "https://linkedin.com/in/stefan-jovanovic",
                 "https://github.com/stefan-jovanovic",
                 List.of(
-                        new SkillSeed("React", "ADVANCED"),
-                        new SkillSeed("Node.js", "ADVANCED"),
-                        new SkillSeed("MongoDB", "INTERMEDIATE"),
-                        new SkillSeed("AWS", "BEGINNER"),
-                        new SkillSeed("Git", "ADVANCED")
+                        new SkillSeed(SkillName.REACT, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.NODE_JS, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.MONGODB, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.AWS, SkillLevel.BEGINNER),
+                        new SkillSeed(SkillName.GIT, SkillLevel.ADVANCED)
                 ),
                 List.of(
                         new EducationSeed(
@@ -159,10 +187,21 @@ public class DatabaseSeeder implements CommandLineRunner {
                         new ExperienceSeed(
                                 "Levi9",
                                 "Associate Software Engineer",
+                                ExperienceType.FULL_TIME,
                                 "Worked on full-stack features for enterprise clients using React and Node.js microservices.",
                                 LocalDate.of(2023, 9, 1),
                                 null,
                                 true)
+                ),
+                List.of(
+                        new ProjectSeed(
+                                "Cloud Task Manager",
+                                "Full-stack task management application built with React, Node.js and MongoDB.",
+                                null,
+                                "https://github.com/stefan-jovanovic/cloud-task-manager",
+                                LocalDate.of(2024, 7, 1),
+                                LocalDate.of(2024, 12, 15),
+                                false)
                 )
         );
 
@@ -172,11 +211,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "https://linkedin.com/in/milica-nikolic",
                 "https://github.com/milica-nikolic",
                 List.of(
-                        new SkillSeed("Python", "ADVANCED"),
-                        new SkillSeed("Machine Learning", "INTERMEDIATE"),
-                        new SkillSeed("Pandas", "ADVANCED"),
-                        new SkillSeed("TensorFlow", "BEGINNER"),
-                        new SkillSeed("SQL", "INTERMEDIATE")
+                        new SkillSeed(SkillName.PYTHON, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.MACHINE_LEARNING, SkillLevel.INTERMEDIATE),
+                        new SkillSeed(SkillName.PANDAS, SkillLevel.ADVANCED),
+                        new SkillSeed(SkillName.TENSORFLOW, SkillLevel.BEGINNER),
+                        new SkillSeed(SkillName.SQL, SkillLevel.INTERMEDIATE)
                 ),
                 List.of(
                         new EducationSeed(
@@ -191,10 +230,21 @@ public class DatabaseSeeder implements CommandLineRunner {
                         new ExperienceSeed(
                                 "DataLab Research",
                                 "ML Research Intern",
+                                ExperienceType.INTERNSHIP,
                                 "Assisted in building and evaluating classification models for NLP tasks using Python and TensorFlow.",
                                 LocalDate.of(2024, 3, 1),
                                 LocalDate.of(2024, 6, 30),
                                 false)
+                ),
+                List.of(
+                        new ProjectSeed(
+                                "Machine Learning Classification Dashboard",
+                                "Dashboard for training, comparing and visualizing classification models.",
+                                null,
+                                "https://github.com/milica-nikolic/ml-dashboard",
+                                LocalDate.of(2024, 8, 1),
+                                null,
+                                true)
                 )
         );
 
@@ -237,7 +287,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "Linux, Docker, GitHub Actions, basic AWS or GCP",
                 "Belgrade, Serbia",
                 EmploymentType.INTERNSHIP, WorkMode.ONSITE,
-                LocalDate.of(2026, 7, 15));
+                LocalDate.of(2026, 8, 15));
 
         Job dataJob = seedJob(infostud,
                 "Data Analyst Student",
@@ -248,26 +298,27 @@ public class DatabaseSeeder implements CommandLineRunner {
                 LocalDate.of(2026, 9, 15));
 
         // ── Applications ──────────────────────────────────────────────────────
-        seedApplication(backendJob,  user1, cv1, ApplicationStatus.APPLIED);
+        seedApplication(backendJob, user1, cv1, ApplicationStatus.APPLIED);
         seedApplication(frontendJob, user2, cv2, ApplicationStatus.SHORTLISTED);
-        seedApplication(aiJob,       user4, cv4, ApplicationStatus.APPLIED);
-        seedApplication(fullstackJob,user3, cv3, ApplicationStatus.SHORTLISTED);
-        seedApplication(dataJob,     user4, cv4, ApplicationStatus.APPLIED);
-        seedApplication(devopsJob,   user1, cv1, ApplicationStatus.APPLIED);
-        seedApplication(backendJob,  user3, cv3, ApplicationStatus.SHORTLISTED);
+        seedApplication(aiJob, user4, cv4, ApplicationStatus.APPLIED);
+        seedApplication(fullstackJob, user3, cv3, ApplicationStatus.SHORTLISTED);
+        seedApplication(dataJob, user4, cv4, ApplicationStatus.APPLIED);
+        seedApplication(devopsJob, user1, cv1, ApplicationStatus.APPLIED);
+        seedApplication(backendJob, user3, cv3, ApplicationStatus.SHORTLISTED);
 
         // ── Summary ───────────────────────────────────────────────────────────
         log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         log.info("  Database seeding complete");
         log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log.info("  admin@cvapp.com       / password  (ADMIN)");
-        log.info("  company@cvapp.com     / password  (BEST Nis)");
-        log.info("  company2@cvapp.com    / password  (Google)");
-        log.info("  company3@cvapp.com    / password  (Infostud)");
-        log.info("  user@cvapp.com        / password  (Marko)");
-        log.info("  user2@cvapp.com       / password  (Ana)");
-        log.info("  user3@cvapp.com       / password  (Stefan)");
-        log.info("  user4@cvapp.com       / password  (Milica)");
+        log.info("  Default password for new seed accounts: Password123!");
+        log.info("  admin@cvapp.com       (ADMIN)");
+        log.info("  company@cvapp.com     (BEST Nis)");
+        log.info("  company2@cvapp.com    (Google)");
+        log.info("  company3@cvapp.com    (Infostud)");
+        log.info("  user@cvapp.com        (Marko)");
+        log.info("  user2@cvapp.com       (Ana)");
+        log.info("  user3@cvapp.com       (Stefan)");
+        log.info("  user4@cvapp.com       (Milica)");
         log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 
@@ -309,10 +360,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                       String linkedinUrl, String githubUrl,
                       List<SkillSeed> skills,
                       List<EducationSeed> educationList,
-                      List<ExperienceSeed> experienceList) {
-        return cvRepository.findByUser(user)
+                      List<ExperienceSeed> experienceList,
+                      List<ProjectSeed> projectList) {
+        CV cv = cvRepository.findByUser(user)
                 .orElseGet(() -> {
-                    CV cv = CV.builder()
+                    CV newCV = CV.builder()
                             .user(user)
                             .firstName(firstName)
                             .lastName(lastName)
@@ -323,24 +375,55 @@ public class DatabaseSeeder implements CommandLineRunner {
                             .githubUrl(githubUrl)
                             .build();
 
-                    skills.forEach(s -> cv.getSkills().add(
-                            Skill.builder().cv(cv).name(s.name()).level(s.level()).build()));
+                    skills.forEach(s -> newCV.getSkills().add(
+                            Skill.builder().cv(newCV).name(s.name()).level(s.level()).build()));
 
-                    educationList.forEach(e -> cv.getEducation().add(
-                            Education.builder().cv(cv)
+                    educationList.forEach(e -> newCV.getEducation().add(
+                            Education.builder().cv(newCV)
                                     .institution(e.institution()).degree(e.degree())
                                     .fieldOfStudy(e.fieldOfStudy()).startDate(e.startDate())
                                     .endDate(e.endDate()).current(e.current()).build()));
 
-                    experienceList.forEach(e -> cv.getExperience().add(
-                            Experience.builder().cv(cv)
-                                    .companyName(e.companyName()).position(e.position())
-                                    .description(e.description()).startDate(e.startDate())
-                                    .endDate(e.endDate()).current(e.current()).build()));
+                    experienceList.forEach(e -> newCV.getExperience().add(
+                            Experience.builder()
+                                    .cv(newCV)
+                                    .companyName(e.companyName())
+                                    .position(e.position())
+                                    .experienceType(e.experienceType())
+                                    .description(e.description())
+                                    .startDate(e.startDate())
+                                    .endDate(e.endDate())
+                                    .current(e.current())
+                                    .build()
+                    ));
 
-                    CV saved = cvRepository.save(cv);
+                    CV saved = cvRepository.save(newCV);
                     log.info("Seeded CV for {} {}", firstName, lastName);
                     return saved;
+                });
+
+        seedProjects(cv, projectList);
+        return cv;
+    }
+
+    private void seedProjects(CV cv, List<ProjectSeed> projectList) {
+        List<Project> existingProjects = projectRepository.findByCv(cv);
+
+        projectList.stream()
+                .filter(seed -> existingProjects.stream()
+                        .noneMatch(project -> project.getName().equals(seed.name())))
+                .forEach(seed -> {
+                    projectRepository.save(Project.builder()
+                            .cv(cv)
+                            .name(seed.name())
+                            .description(seed.description())
+                            .projectUrl(seed.projectUrl())
+                            .repositoryUrl(seed.repositoryUrl())
+                            .startDate(seed.startDate())
+                            .endDate(seed.endDate())
+                            .current(seed.current())
+                            .build());
+                    log.info("Seeded project {}", seed.name());
                 });
     }
 
@@ -375,9 +458,25 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     // ── Seed value objects ────────────────────────────────────────────────────
 
-    private record SkillSeed(String name, String level) {}
+    private record SkillSeed(SkillName name, SkillLevel level) {}
     private record EducationSeed(String institution, String degree, String fieldOfStudy,
                                  LocalDate startDate, LocalDate endDate, boolean current) {}
-    private record ExperienceSeed(String companyName, String position, String description,
-                                  LocalDate startDate, LocalDate endDate, boolean current) {}
+    private record ExperienceSeed(
+            String companyName,
+            String position,
+            ExperienceType experienceType,
+            String description,
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean current
+    ) {}
+    private record ProjectSeed(
+            String name,
+            String description,
+            String projectUrl,
+            String repositoryUrl,
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean current
+    ) {}
 }

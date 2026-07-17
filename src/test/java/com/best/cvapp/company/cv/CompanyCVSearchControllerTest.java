@@ -1,5 +1,6 @@
 package com.best.cvapp.company.cv;
 
+import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
@@ -11,22 +12,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class CompanyCVSearchControllerTest {
+class CompanyCVSearchControllerTest extends AbstractIntegrationTest {
 
     private static final String TEST_PASSWORD = "Password123!";
 
@@ -97,10 +92,10 @@ class CompanyCVSearchControllerTest {
     void shouldFindCVBySkill() throws Exception {
         String userToken = registerUserAndGetToken("user@best.com");
         createCV(userToken, "Marko", "Maribor", "Backend developer student");
-        addSkill(userToken, "Java", "Advanced");
+        addSkill(userToken, "JAVA", "ADVANCED");
 
         mockMvc.perform(get("/api/company/cvs/search")
-                        .param("skill", "Java")
+                        .param("skill", "JAVA")
                         .header("Authorization", "Bearer " + companyToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -133,10 +128,22 @@ class CompanyCVSearchControllerTest {
     }
 
     @Test
+    void shouldTreatLikeWildcardsAsLiteralCharacters() throws Exception {
+        String userToken = registerUserAndGetToken("user@best.com");
+        createCV(userToken, "Marko", "Maribor", "Backend developer student");
+
+        mockMvc.perform(get("/api/company/cvs/search")
+                        .param("keyword", "%_")
+                        .header("Authorization", "Bearer " + companyToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void shouldReturnEmptyWhenSkillNotFound() throws Exception {
         String userToken = registerUserAndGetToken("user@best.com");
         createCV(userToken, "Marko", "Maribor", "Backend developer student");
-        addSkill(userToken, "Java", "Advanced");
+        addSkill(userToken, "JAVA", "ADVANCED");
 
         mockMvc.perform(get("/api/company/cvs/search")
                         .param("skill", "COBOL")
@@ -150,11 +157,11 @@ class CompanyCVSearchControllerTest {
     void shouldFindCVWithCombinedFilters() throws Exception {
         String userToken = registerUserAndGetToken("user@best.com");
         createCV(userToken, "Marko", "Maribor", "Backend developer student");
-        addSkill(userToken, "Java", "Advanced");
+        addSkill(userToken, "JAVA", "ADVANCED");
 
         mockMvc.perform(get("/api/company/cvs/search")
                         .param("keyword", "backend")
-                        .param("skill", "Java")
+                        .param("skill", "JAVA")
                         .param("location", "Maribor")
                         .header("Authorization", "Bearer " + companyToken))
                 .andExpect(status().isOk())
@@ -166,11 +173,11 @@ class CompanyCVSearchControllerTest {
     void shouldReturnEmptyWhenCVCombinedFiltersContradict() throws Exception {
         String userToken = registerUserAndGetToken("user@best.com");
         createCV(userToken, "Marko", "Maribor", "Backend developer student");
-        addSkill(userToken, "Java", "Advanced");
+        addSkill(userToken, "JAVA", "ADVANCED");
 
         mockMvc.perform(get("/api/company/cvs/search")
                         .param("keyword", "backend")
-                        .param("skill", "Java")
+                        .param("skill", "JAVA")
                         .param("location", "Ljubljana")
                         .header("Authorization", "Bearer " + companyToken))
                 .andExpect(status().isOk())
@@ -221,12 +228,21 @@ class CompanyCVSearchControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void shouldRejectOversizedSearchFilter() throws Exception {
+        mockMvc.perform(get("/api/company/cvs/search")
+                        .param("keyword", "a".repeat(201))
+                        .header("Authorization", "Bearer " + companyToken))
+                .andExpect(status().isBadRequest());
+    }
+
     private String createCompanyAndLogin() throws Exception {
         User companyUser = new User();
         companyUser.setEmail("company@best.com");
         companyUser.setPassword(passwordEncoder.encode(TEST_PASSWORD));
         companyUser.setRole(Role.COMPANY);
         companyUser.setProvider(AuthProvider.LOCAL);
+        companyUser.setEnabled(true);
 
         userRepository.save(companyUser);
 
@@ -243,21 +259,15 @@ class CompanyCVSearchControllerTest {
     }
 
     private String registerUserAndGetToken(String email) throws Exception {
-        String body = """
-                {
-                  "email": "%s",
-                  "password": "%s",
-                  "confirmPassword": "%s"
-                }
-                """.formatted(email, TEST_PASSWORD, TEST_PASSWORD);
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(TEST_PASSWORD));
+        user.setRole(Role.USER);
+        user.setProvider(AuthProvider.LOCAL);
+        user.setEnabled(true);
+        userRepository.save(user);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        return extractAccessToken(result);
+        return loginAndGetToken(email, TEST_PASSWORD);
     }
 
     private Long createCV(String token, String firstName, String address, String summary) throws Exception {
@@ -298,8 +308,8 @@ class CompanyCVSearchControllerTest {
         mockMvc.perform(post("/api/user/cv/skills")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk());
+                .content(body))
+                .andExpect(status().isCreated());
     }
 
     private String loginAndGetToken(String email, String password) throws Exception {
