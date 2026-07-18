@@ -421,7 +421,7 @@ class CVUploadControllerTest extends AbstractIntegrationTest {
                         .content(toJson(new LoginRequest(email, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.role").value("USER"))
                 .andReturn();
     }

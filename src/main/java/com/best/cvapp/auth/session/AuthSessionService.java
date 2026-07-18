@@ -1,8 +1,7 @@
 package com.best.cvapp.auth.session;
 
 import com.best.cvapp.auth.jwt.JwtService;
-import com.best.cvapp.auth.session.dto.AuthResponse;
-import com.best.cvapp.auth.session.dto.RefreshTokenRequest;
+import com.best.cvapp.auth.session.dto.SessionTokens;
 import com.best.cvapp.auth.session.exception.UserAccountDisabledException;
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,7 @@ public class AuthSessionService {
     private final RefreshTokenService refreshTokenService;
 
     @Transactional
-    public AuthResponse createSession(User user) {
+    public SessionTokens createSession(User user) {
         if (!user.isEnabled()) {
             throw new UserAccountDisabledException();
         }
@@ -33,12 +32,12 @@ public class AuthSessionService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new AuthResponse(accessToken, refreshToken, user.getRole().name());
+        return new SessionTokens(accessToken, refreshToken, user.getRole().name());
     }
 
     @Transactional
-    public AuthResponse refresh(RefreshTokenRequest request) {
-        RefreshToken oldRefreshToken = refreshTokenService.validateRefreshToken(request.refreshToken());
+    public SessionTokens refresh(String rawRefreshToken) {
+        RefreshToken oldRefreshToken = refreshTokenService.validateRefreshToken(rawRefreshToken);
         User user = oldRefreshToken.getUser();
 
         if (!user.isEnabled()) {
@@ -51,12 +50,12 @@ public class AuthSessionService {
         String newAccessToken = jwtService.generateToken(user);
         String newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new AuthResponse(newAccessToken, newRefreshToken, user.getRole().name());
+        return new SessionTokens(newAccessToken, newRefreshToken, user.getRole().name());
     }
 
     @Transactional
-    public void logout(RefreshTokenRequest request) {
-        RefreshToken refreshToken = refreshTokenService.validateRefreshToken(request.refreshToken());
+    public void logout(String rawRefreshToken) {
+        RefreshToken refreshToken = refreshTokenService.validateRefreshToken(rawRefreshToken);
         refreshTokenService.deleteById(refreshToken.getId());
     }
 }

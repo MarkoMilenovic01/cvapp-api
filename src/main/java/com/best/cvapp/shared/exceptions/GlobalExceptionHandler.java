@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -163,6 +164,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildResponse(
                 HttpStatus.UNAUTHORIZED,
                 "Invalid email or password",
+                null
+        ));
+    }
+
+    /**
+     * Handles login attempts by users who have not verified their account or
+     * whose account was disabled by an administrator.
+     */
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleDisabledAccount(DisabledException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "User account is disabled",
                 null
         ));
     }

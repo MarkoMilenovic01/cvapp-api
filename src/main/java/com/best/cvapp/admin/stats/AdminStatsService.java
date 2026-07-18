@@ -12,6 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+/**
+ * Calculates administrator-facing platform statistics.
+ *
+ * Flow:
+ * 1. Count users, companies, CVs, jobs, and applications.
+ * 2. Count jobs that are active and not past their deadline.
+ * 3. Derive the inactive or expired job count.
+ * 4. Return all aggregate values in one response.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

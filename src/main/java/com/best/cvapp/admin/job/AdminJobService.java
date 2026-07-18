@@ -13,18 +13,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+/**
+ * Handles administrator access to all jobs, including inactive jobs.
+ *
+ * Flow:
+ * 1. Load jobs with pagination or find one job by ID.
+ * 2. Map job and company details to an admin response.
+ * 3. Prevent an expired job from being reactivated.
+ * 4. Save active-state changes or delete the selected job.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminJobService {
 
     private final JobRepository jobRepository;
 
+    @Transactional(readOnly = true)
     public Page<AdminJobResponse> getAllJobs(Pageable pageable) {
         return jobRepository.findAll(pageable)
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public AdminJobResponse getJobById(Long id) {
         return toResponse(findJob(id));
     }

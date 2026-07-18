@@ -3,9 +3,10 @@ package com.best.cvapp.auth.credentials;
 import com.best.cvapp.AbstractIntegrationTest;
 import com.best.cvapp.auth.credentials.dto.LoginRequest;
 import com.best.cvapp.auth.credentials.dto.RegisterRequest;
+import com.best.cvapp.auth.emailverification.dto.ResendVerificationRequest;
 import com.best.cvapp.auth.emailverification.dto.VerifyEmailRequest;
-import com.best.cvapp.auth.session.dto.RefreshTokenRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,35 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void shouldResendVerificationEmail() throws Exception {
+        register(TEST_EMAIL, TEST_PASSWORD);
+        String originalTokenHash = jdbcTemplate.queryForObject(
+                "SELECT token FROM email_verification_tokens",
+                String.class
+        );
+
+        mockMvc.perform(post(AUTH_URL + "/resend-verification")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new ResendVerificationRequest(TEST_EMAIL.toUpperCase()))))
+                .andExpect(status().isNoContent());
+
+        String renewedTokenHash = jdbcTemplate.queryForObject(
+                "SELECT token FROM email_verification_tokens",
+                String.class
+        );
+        org.assertj.core.api.Assertions.assertThat(renewedTokenHash)
+                .isNotEqualTo(originalTokenHash);
+    }
+
+    @Test
+    void shouldNotRevealWhetherResendEmailExists() throws Exception {
+        mockMvc.perform(post(AUTH_URL + "/resend-verification")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(new ResendVerificationRequest("unknown@best.com"))))
+                .andExpect(status().isNoContent());
+    }
+
     // ── Login ─────────────────────────────────────────────────────────────────
 
     @Test
@@ -129,8 +159,22 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
                         .content(toJson(loginRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists())
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(cookie().exists("refresh_token"))
+                .andExpect(cookie().httpOnly("refresh_token", true))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("SameSite=Lax")));
+    }
+
+    @Test
+    void shouldRejectLoginBeforeEmailVerification() throws Exception {
+        register(TEST_EMAIL, TEST_PASSWORD);
+
+        mockMvc.perform(post(AUTH_URL + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(loginRequest(TEST_EMAIL, TEST_PASSWORD))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User account is disabled"));
     }
 
     @Test
@@ -155,38 +199,37 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRefreshTokenSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
+        Cookie refreshCookie = extractRefreshCookie(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         mockMvc.perform(post(AUTH_URL + "/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest(refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists())
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(cookie().exists("refresh_token"))
+                .andExpect(cookie().value("refresh_token", org.hamcrest.Matchers.not(refreshCookie.getValue())));
     }
 
     @Test
     void shouldFailRefreshWithInvalidToken() throws Exception {
         mockMvc.perform(post(AUTH_URL + "/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest("invalid-token"))))
+                        .cookie(new Cookie("refresh_token", "invalid-token")))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldFailRefreshWithExpiredRefreshToken() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
+        Cookie refreshCookie = extractRefreshCookie(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         jdbcTemplate.update("""
         UPDATE refresh_tokens
         SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute'
         WHERE token = ?
-        """, DigestUtils.sha256Hex(refreshToken));
+        """, DigestUtils.sha256Hex(refreshCookie.getValue()));
 
         mockMvc.perform(post(AUTH_URL + "/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest(refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -194,26 +237,24 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
 
     @Test
     void shouldLogoutSuccessfully() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
+        Cookie refreshCookie = extractRefreshCookie(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         mockMvc.perform(post(AUTH_URL + "/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest(refreshToken))))
-                .andExpect(status().isNoContent());
+                        .cookie(refreshCookie))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge("refresh_token", 0));
     }
 
     @Test
     void shouldFailRefreshAfterLogout() throws Exception {
-        String refreshToken = extractRefreshToken(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
+        Cookie refreshCookie = extractRefreshCookie(registerVerifyAndLogin(TEST_EMAIL, TEST_PASSWORD));
 
         mockMvc.perform(post(AUTH_URL + "/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest(refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(post(AUTH_URL + "/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new RefreshTokenRequest(refreshToken))))
+                        .cookie(refreshCookie))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -276,7 +317,7 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
                         .content(toJson(loginRequest(TEST_EMAIL, TEST_PASSWORD))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.role").value("USER"));
     }
 
@@ -336,9 +377,10 @@ class CredentialsAuthControllerTest extends AbstractIntegrationTest {
         return objectMapper.readTree(body).get("accessToken").asText();
     }
 
-    private String extractRefreshToken(MvcResult result) throws Exception {
-        String body = result.getResponse().getContentAsString();
-        return objectMapper.readTree(body).get("refreshToken").asText();
+    private Cookie extractRefreshCookie(MvcResult result) {
+        Cookie cookie = result.getResponse().getCookie("refresh_token");
+        org.assertj.core.api.Assertions.assertThat(cookie).isNotNull();
+        return cookie;
     }
 
     private RegisterRequest registerRequest(String email, String password) {

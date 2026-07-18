@@ -74,14 +74,6 @@ public class AdminJobControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectExcessiveJobPageSize() throws Exception {
-        mockMvc.perform(get("/api/admin/jobs?size=101")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Page size must not exceed 100"));
-    }
-
-    @Test
     void shouldRejectGetAllJobsWithoutToken() throws Exception {
         mockMvc.perform(get("/api/admin/jobs"))
                 .andExpect(status().isUnauthorized());

@@ -3,6 +3,7 @@ package com.best.cvapp.auth.companyinvite;
 import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
 import com.best.cvapp.auth.companyinvite.dto.InviteRequest;
 import com.best.cvapp.auth.session.dto.AuthResponse;
+import com.best.cvapp.auth.session.RefreshTokenCookieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class CompanyInviteController {
 
     private final CompanyInviteService companyInviteService;
+    private final RefreshTokenCookieService refreshTokenCookieService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -25,6 +27,6 @@ public class CompanyInviteController {
 
     @PostMapping("/accept")
     public ResponseEntity<AuthResponse> acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
-        return ResponseEntity.ok(companyInviteService.acceptInvite(request));
+        return refreshTokenCookieService.authenticated(companyInviteService.acceptInvite(request));
     }
 }

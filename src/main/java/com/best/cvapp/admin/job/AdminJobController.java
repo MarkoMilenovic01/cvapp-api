@@ -1,6 +1,5 @@
 package com.best.cvapp.admin.job;
 
-import com.best.cvapp.admin.AdminPageSizeValidator;
 import com.best.cvapp.admin.job.dto.AdminJobResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +20,6 @@ public class AdminJobController {
     @GetMapping
     public ResponseEntity<Page<AdminJobResponse>> getAllJobs(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        AdminPageSizeValidator.validate(pageable);
         return ResponseEntity.ok(adminJobService.getAllJobs(pageable));
     }
 

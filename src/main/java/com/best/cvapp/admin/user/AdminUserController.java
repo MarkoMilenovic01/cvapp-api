@@ -1,6 +1,5 @@
 package com.best.cvapp.admin.user;
 
-import com.best.cvapp.admin.AdminPageSizeValidator;
 import com.best.cvapp.admin.user.dto.AdminUserResponse;
 import com.best.cvapp.admin.user.dto.ChangeRoleRequest;
 import com.best.cvapp.user.User;
@@ -25,7 +24,6 @@ public class AdminUserController {
     @GetMapping
     public ResponseEntity<Page<AdminUserResponse>> getAllUsers(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        AdminPageSizeValidator.validate(pageable);
         return ResponseEntity.ok(adminUserService.getAllUsers(pageable));
     }
 
@@ -44,8 +42,9 @@ public class AdminUserController {
     @PatchMapping("/{id}/role")
     public ResponseEntity<AdminUserResponse> changeRole(
             @PathVariable Long id,
-            @AuthenticationPrincipal User currentAdmin,
-            @Valid @RequestBody ChangeRoleRequest request
+            @Valid @RequestBody ChangeRoleRequest request,
+            @AuthenticationPrincipal User currentAdmin
+
     ) {
         return ResponseEntity.ok(adminUserService.changeRole(id, request.role(), currentAdmin));
     }

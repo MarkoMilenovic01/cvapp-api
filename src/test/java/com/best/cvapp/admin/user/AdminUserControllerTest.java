@@ -65,14 +65,6 @@ public class AdminUserControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectExcessiveUserPageSize() throws Exception {
-        mockMvc.perform(get("/api/admin/users?size=101")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Page size must not exceed 100"));
-    }
-
-    @Test
     void shouldRejectGetAllUsersWithoutToken() throws Exception {
         mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isUnauthorized());
@@ -156,7 +148,7 @@ public class AdminUserControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectChangingUserToCompanyWithoutCompanyProfile() throws Exception {
+    void shouldRejectChangingUserToCompany() throws Exception {
         ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.COMPANY);
 
         mockMvc.perform(patch("/api/admin/users/" + seededUserId + "/role")
@@ -164,8 +156,7 @@ public class AdminUserControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(
-                        "A user cannot receive the COMPANY role without an existing company profile"));
+                .andExpect(jsonPath("$.message").value("Only USER and ADMIN roles can be changed"));
     }
 
     @Test
@@ -208,8 +199,30 @@ public class AdminUserControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(
-                        "A company account cannot receive the USER role while its company profile exists"));
+                .andExpect(jsonPath("$.message").value("Only USER and ADMIN roles can be changed"));
+    }
+
+    @Test
+    void shouldRejectChangingCompanyAccountToAdmin() throws Exception {
+        Long companyUserId = jdbcTemplate.queryForObject(
+                "INSERT INTO users (email, password, role, enabled, provider) " +
+                        "VALUES (?, ?, 'COMPANY', true, 'LOCAL') RETURNING id",
+                Long.class,
+                "company-admin@cvapp.com", passwordEncoder.encode("Test@1234")
+        );
+        jdbcTemplate.update(
+                "INSERT INTO companies (user_id, name) VALUES (?, ?)",
+                companyUserId, "BEST Belgrade"
+        );
+
+        ChangeRoleRequest request = new ChangeRoleRequest(com.best.cvapp.user.Role.ADMIN);
+
+        mockMvc.perform(patch("/api/admin/users/" + companyUserId + "/role")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Only USER and ADMIN roles can be changed"));
     }
 
     @Test

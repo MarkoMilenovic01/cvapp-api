@@ -69,14 +69,6 @@ public class AdminCompanyControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectExcessiveCompanyPageSize() throws Exception {
-        mockMvc.perform(get("/api/admin/companies?size=101")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Page size must not exceed 100"));
-    }
-
-    @Test
     void shouldRejectGetAllCompaniesWithoutToken() throws Exception {
         mockMvc.perform(get("/api/admin/companies"))
                 .andExpect(status().isUnauthorized());

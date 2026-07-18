@@ -1,6 +1,5 @@
 package com.best.cvapp.admin.company;
 
-import com.best.cvapp.admin.AdminPageSizeValidator;
 import com.best.cvapp.admin.company.dto.AdminCompanyResponse;
 import com.best.cvapp.user.User;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ public class AdminCompanyController {
     @GetMapping
     public ResponseEntity<Page<AdminCompanyResponse>> getAllCompanies(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        AdminPageSizeValidator.validate(pageable);
         return ResponseEntity.ok(adminCompanyService.getAllCompanies(pageable));
     }
 

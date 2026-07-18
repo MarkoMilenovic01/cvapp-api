@@ -4,7 +4,7 @@ import com.best.cvapp.auth.companyinvite.dto.AcceptInviteRequest;
 import com.best.cvapp.auth.companyinvite.dto.InviteRequest;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.auth.session.AuthSessionService;
-import com.best.cvapp.auth.session.dto.AuthResponse;
+import com.best.cvapp.auth.session.dto.SessionTokens;
 import com.best.cvapp.company.profile.Company;
 import com.best.cvapp.company.profile.CompanyRepository;
 import com.best.cvapp.email.EmailService;
@@ -18,7 +18,6 @@ import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,23 +59,33 @@ public class CompanyInviteService {
             throw new EmailAlreadyInUseException();
         }
 
-        inviteRepository.findByEmail(email).ifPresent(existing -> {
-            if (!existing.isExpired() && !existing.isUsed()) {
+        CompanyInvite existingInvite = inviteRepository.findByEmail(email).orElse(null);
+        if (existingInvite != null) {
+            if (!existingInvite.isExpired() && !existingInvite.isUsed()) {
                 throw new InviteAlreadySentException();
             }
-            inviteRepository.delete(existing);
-            inviteRepository.flush();
-        });
+        }
 
         String token = UUID.randomUUID().toString();
+        String tokenHash = DigestUtils.sha256Hex(token);
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(expirationHours);
 
-        CompanyInvite invite = CompanyInvite.builder()
-                .email(email)
-                .companyName(companyName)
-                .token(DigestUtils.sha256Hex(token))
-                .used(false)
-                .expiresAt(LocalDateTime.now().plusHours(expirationHours))
-                .build();
+        CompanyInvite invite;
+        if (existingInvite == null) {
+            invite = CompanyInvite.builder()
+                    .email(email)
+                    .companyName(companyName)
+                    .token(tokenHash)
+                    .used(false)
+                    .expiresAt(expiresAt)
+                    .build();
+        } else {
+            existingInvite.setCompanyName(companyName);
+            existingInvite.setToken(tokenHash);
+            existingInvite.setUsed(false);
+            existingInvite.setExpiresAt(expiresAt);
+            invite = existingInvite;
+        }
 
         inviteRepository.save(invite);
 
@@ -84,7 +93,7 @@ public class CompanyInviteService {
     }
 
     @Transactional
-    public AuthResponse acceptInvite(AcceptInviteRequest request) {
+    public SessionTokens acceptInvite(AcceptInviteRequest request) {
         if (!request.password().equals(request.confirmPassword())) {
             throw new PasswordsDoNotMatchException();
         }

@@ -8,6 +8,7 @@ Base path: `/api/auth`. These routes are public except sending a company invite,
 | --- | --- | --- | --- |
 | `POST` | `/api/auth/register` | `RegisterRequest` | `200` message; verification email sent |
 | `POST` | `/api/auth/verify-email` | `{"token":"..."}` | `204` |
+| `POST` | `/api/auth/resend-verification` | `{"email":"..."}` | `204` |
 | `POST` | `/api/auth/login` | `LoginRequest` | `200 AuthResponse` |
 | `POST` | `/api/auth/oauth/google` | `{"idToken":"..."}` | `200 AuthResponse` |
 | `POST` | `/api/auth/refresh` | `{"refreshToken":"..."}` | `200 AuthResponse` |
@@ -30,6 +31,8 @@ Registration:
 ```
 
 Registration creates a disabled `USER` account and returns a message. It does not return tokens until email verification is completed.
+
+If the verification token expires, request another one with `POST /api/auth/resend-verification`. The endpoint always returns `204` so it does not reveal whether an account exists. A new token is sent only for an existing disabled local account.
 
 Login:
 

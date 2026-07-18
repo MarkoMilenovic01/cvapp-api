@@ -13,6 +13,7 @@ import com.best.cvapp.cv.profile.CVRepository;
 import com.best.cvapp.job.application.JobApplicationRepository;
 import com.best.cvapp.job.core.Job;
 import com.best.cvapp.job.core.JobRepository;
+import com.best.cvapp.shared.storage.CloudinaryService;
 import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
@@ -24,9 +25,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Handles administrator management of user accounts and owned data.
+ *
+ * Flow:
+ * 1. Load users with pagination or find one user by ID.
+ * 2. Prevent unsafe self-modification and protect the final enabled administrator.
+ * 3. Validate role changes and revoke refresh tokens after security-sensitive changes.
+ * 4. Delete CV or company dependencies and their Cloudinary files when removing a user.
+ * 5. Map the resulting account state to an admin response.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminUserService {
 
     private final UserRepository userRepository;
@@ -37,12 +47,15 @@ public class AdminUserService {
     private final FavoriteCVRepository favoriteCVRepository;
     private final CVViewRepository cvViewRepository;
     private final JobRepository jobRepository;
+    private final CloudinaryService cloudinaryService;
 
+    @Transactional(readOnly = true)
     public Page<AdminUserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public AdminUserResponse getUserById(Long id) {
         return toResponse(findUser(id));
     }
@@ -86,14 +99,16 @@ public class AdminUserService {
 
         // ── If this user has a CV (USER role) ──────────────────────────────
         cvRepository.findByUser(user).ifPresent(cv -> {
+            deleteCvFiles(cv.getProfilePhotoId(), cv.getPdfPublicId());
             jobApplicationRepository.deleteAll(jobApplicationRepository.findByCv(cv));
             favoriteCVRepository.deleteAll(favoriteCVRepository.findByCv(cv));
             cvViewRepository.deleteAll(cvViewRepository.findByCv(cv));
-            cvRepository.delete(cv); // cascades to Education/Experience/Skill (already configured)
+            cvRepository.delete(cv); // cascades to Education/Experience/Skill
         });
 
         // ── If this user has a Company profile (COMPANY role) ─────────────
         companyRepository.findByUser(user).ifPresent(company -> {
+            deleteCompanyPhoto(company.getPhotoPublicId());
             List<Job> jobs = jobRepository.findByCompany(company);
             for (Job job : jobs) {
                 jobApplicationRepository.deleteAll(jobApplicationRepository.findByJob(job));
@@ -106,6 +121,21 @@ public class AdminUserService {
 
         refreshTokenService.deleteByUser(user);
         userRepository.delete(user);
+    }
+
+    private void deleteCvFiles(String profilePhotoId, String pdfPublicId) {
+        if (profilePhotoId != null) {
+            cloudinaryService.deleteImage(profilePhotoId);
+        }
+        if (pdfPublicId != null) {
+            cloudinaryService.deletePdf(pdfPublicId);
+        }
+    }
+
+    private void deleteCompanyPhoto(String photoPublicId) {
+        if (photoPublicId != null) {
+            cloudinaryService.deleteImage(photoPublicId);
+        }
     }
 
     private void rejectSelfModification(User target, User currentAdmin, String action) {
@@ -123,22 +153,15 @@ public class AdminUserService {
     }
 
     private void validateRoleChange(User user, Role requestedRole) {
-        if (requestedRole == user.getRole() || requestedRole == Role.ADMIN) {
+        if (requestedRole == user.getRole()) {
             return;
         }
 
-        boolean hasCompanyProfile = companyRepository.existsByUser(user);
+        boolean userToAdmin = user.getRole() == Role.USER && requestedRole == Role.ADMIN;
+        boolean adminToUser = user.getRole() == Role.ADMIN && requestedRole == Role.USER;
 
-        if (requestedRole == Role.COMPANY && !hasCompanyProfile) {
-            throw new InvalidAdminRoleChangeException(
-                    "A user cannot receive the COMPANY role without an existing company profile"
-            );
-        }
-
-        if (requestedRole == Role.USER && hasCompanyProfile) {
-            throw new InvalidAdminRoleChangeException(
-                    "A company account cannot receive the USER role while its company profile exists"
-            );
+        if (!userToAdmin && !adminToUser) {
+            throw new InvalidAdminRoleChangeException("Only USER and ADMIN roles can be changed");
         }
     }
 

@@ -12,19 +12,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Handles administrator access to company accounts.
+ *
+ * Flow:
+ * 1. Load all companies with pagination or find one company by ID.
+ * 2. Map company and owner details to an admin response.
+ * 3. Delegate company deletion to the shared administrator user-deletion flow.
+ * 4. Remove the owner, company data, dependent records, and stored files together.
+ */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminCompanyService {
 
     private final CompanyRepository companyRepository;
     private final AdminUserService adminUserService;
 
+    @Transactional(readOnly = true)
     public Page<AdminCompanyResponse> getAllCompanies(Pageable pageable) {
         return companyRepository.findAll(pageable)
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public AdminCompanyResponse getCompanyById(Long id) {
         return toResponse(findCompany(id));
     }

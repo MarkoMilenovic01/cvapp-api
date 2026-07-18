@@ -20,7 +20,7 @@ Role body:
 {"role":"ADMIN"}
 ```
 
-Allowed roles are `USER`, `COMPANY` and `ADMIN`. A company profile is required for `COMPANY`; an account with a company profile cannot become `USER`. Administrators cannot disable, demote or delete themselves, and the final enabled administrator is protected. Role changes revoke refresh tokens.
+Only `USER → ADMIN` and `ADMIN → USER` transitions are supported. Company accounts cannot be promoted, demoted, or assigned through this endpoint; they are created through the company-invite flow. Administrators cannot disable, demote or delete themselves, and the final enabled administrator is protected. Role changes revoke refresh tokens.
 
 User response fields: `id`, `email`, `role`, `enabled`, `provider`, `createdAt`.
 
@@ -69,11 +69,11 @@ An expired job cannot be reactivated. Admin job fields: `id`, `companyId`, `comp
 
 ## Pagination and errors
 
-List defaults are `page=0`, `size=20`, `sort=createdAt`. Maximum size is 100.
+List defaults are `page=0`, `size=20`, `sort=createdAt`.
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Invalid input or page size above 100 |
+| `400` | Invalid input |
 | `401` | Missing/invalid access token |
 | `403` | Authenticated user is not an administrator |
 | `404` | Target does not exist |

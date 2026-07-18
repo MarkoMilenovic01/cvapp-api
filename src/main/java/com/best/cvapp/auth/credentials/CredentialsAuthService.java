@@ -6,7 +6,7 @@ import com.best.cvapp.auth.credentials.dto.RegisterResponse;
 import com.best.cvapp.auth.emailverification.EmailVerificationService;
 import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.auth.session.AuthSessionService;
-import com.best.cvapp.auth.session.dto.AuthResponse;
+import com.best.cvapp.auth.session.dto.SessionTokens;
 import com.best.cvapp.auth.credentials.exception.EmailAlreadyInUseException;
 import com.best.cvapp.auth.credentials.exception.GoogleAccountLoginRequiredException;
 import com.best.cvapp.auth.credentials.exception.PasswordsDoNotMatchException;
@@ -14,7 +14,6 @@ import com.best.cvapp.user.Role;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,7 +79,7 @@ public class CredentialsAuthService {
     }
 
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public SessionTokens login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
         Authentication auth = authenticationManager.authenticate(

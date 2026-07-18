@@ -2,7 +2,7 @@ package com.best.cvapp.auth.oauth;
 
 import com.best.cvapp.auth.oauth.dto.GoogleLoginRequest;
 import com.best.cvapp.auth.session.AuthSessionService;
-import com.best.cvapp.auth.session.dto.AuthResponse;
+import com.best.cvapp.auth.session.dto.SessionTokens;
 import com.best.cvapp.auth.oauth.exception.InvalidOAuthTokenException;
 import com.best.cvapp.auth.oauth.exception.OAuthAccountConflictException;
 import com.best.cvapp.user.Role;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -52,7 +53,7 @@ public class GoogleAuthService {
     }
 
     @Transactional
-    public AuthResponse login(GoogleLoginRequest request) {
+    public SessionTokens login(GoogleLoginRequest request) {
         String email = verify(request.idToken());
 
         User user = userRepository.findByEmail(email)
@@ -87,11 +88,16 @@ public class GoogleAuthService {
             }
 
             GoogleIdToken.Payload payload = idToken.getPayload();
-            if (Boolean.FALSE.equals(payload.getEmailVerified())) {
+            if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
                 throw new InvalidOAuthTokenException();
             }
 
-            return payload.getEmail();
+            String email = payload.getEmail();
+            if (email == null || email.isBlank()) {
+                throw new InvalidOAuthTokenException();
+            }
+
+            return email.trim().toLowerCase(Locale.ROOT);
         } catch (InvalidOAuthTokenException e) {
             throw e;
         } catch (Exception e) {

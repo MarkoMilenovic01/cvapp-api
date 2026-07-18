@@ -3,6 +3,7 @@ package com.best.cvapp.auth.emailverification;
 import com.best.cvapp.email.EmailService;
 import com.best.cvapp.auth.emailverification.exception.InvalidVerificationTokenException;
 import com.best.cvapp.auth.emailverification.exception.VerificationTokenExpiredException;
+import com.best.cvapp.auth.oauth.AuthProvider;
 import com.best.cvapp.user.User;
 import com.best.cvapp.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -34,19 +36,34 @@ public class EmailVerificationService {
 
     @Transactional
     public void createAndSendVerification(User user) {
-        tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
-
         String rawToken = UUID.randomUUID().toString();
+        String hashedToken = DigestUtils.sha256Hex(rawToken);
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(EXPIRATION_HOURS);
 
-        EmailVerificationToken token = EmailVerificationToken.builder()
-                .token(DigestUtils.sha256Hex(rawToken))
-                .user(user)
-                .expiresAt(LocalDateTime.now().plusHours(EXPIRATION_HOURS))
-                .build();
+        EmailVerificationToken token = tokenRepository.findByUser(user)
+                .map(existing -> {
+                    existing.renew(hashedToken, expiresAt);
+                    return existing;
+                })
+                .orElseGet(() -> EmailVerificationToken.builder()
+                        .token(hashedToken)
+                        .user(user)
+                        .expiresAt(expiresAt)
+                        .build());
 
         tokenRepository.save(token);
 
         emailService.sendVerificationEmail(user.getEmail(), rawToken);
+    }
+
+    @Transactional
+    public void resendVerification(String requestedEmail) {
+        String email = requestedEmail.trim().toLowerCase(Locale.ROOT);
+
+        userRepository.findByEmail(email)
+                .filter(user -> !user.isEnabled())
+                .filter(user -> user.getProvider() == AuthProvider.LOCAL)
+                .ifPresent(this::createAndSendVerification);
     }
 
     @Transactional

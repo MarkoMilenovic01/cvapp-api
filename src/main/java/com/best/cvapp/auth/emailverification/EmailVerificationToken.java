@@ -48,4 +48,9 @@ public class EmailVerificationToken {
     public boolean isExpired() {
         return expiresAt.isBefore(LocalDateTime.now());
     }
+
+    public void renew(String token, LocalDateTime expiresAt) {
+        this.token = token;
+        this.expiresAt = expiresAt;
+    }
 }

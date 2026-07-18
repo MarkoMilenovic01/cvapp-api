@@ -1,5 +1,6 @@
 package com.best.cvapp.auth.emailverification;
 
+import com.best.cvapp.auth.emailverification.dto.ResendVerificationRequest;
 import com.best.cvapp.auth.emailverification.dto.VerifyEmailRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,14 @@ public class EmailVerificationController {
     @PostMapping("/verify-email")
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         emailVerificationService.verify(request.token());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request
+    ) {
+        emailVerificationService.resendVerification(request.email());
         return ResponseEntity.noContent().build();
     }
 }
