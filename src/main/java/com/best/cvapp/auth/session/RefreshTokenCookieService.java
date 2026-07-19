@@ -10,7 +10,12 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-/** Creates the refresh-token cookie and the public authentication response. */
+/**
+ * Converts an internal session result into the public authentication response.
+ * The access token and role are returned in the response body, while the raw
+ * refresh token is written only to an {@code HttpOnly} cookie scoped to the
+ * authentication endpoints.
+ */
 @Component
 public class RefreshTokenCookieService {
 
@@ -31,6 +36,12 @@ public class RefreshTokenCookieService {
         this.sameSite = sameSite;
     }
 
+    /**
+     * Returns an authentication response and sets the refresh-token cookie.
+     *
+     * @param tokens internal tokens created for the authenticated session
+     * @return the public response containing the access token and role
+     */
     public ResponseEntity<AuthResponse> authenticated(SessionTokens tokens) {
         ResponseCookie cookie = cookie(tokens.refreshToken(), refreshTokenLifetime);
         AuthResponse body = new AuthResponse(tokens.accessToken(), tokens.role());
@@ -40,6 +51,12 @@ public class RefreshTokenCookieService {
                 .body(body);
     }
 
+    /**
+     * Returns an empty logout response that expires the refresh-token cookie.
+     * Server-side token invalidation must be completed before calling this method.
+     *
+     * @return a response that clears the refresh-token cookie
+     */
     public ResponseEntity<Void> loggedOut() {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString())

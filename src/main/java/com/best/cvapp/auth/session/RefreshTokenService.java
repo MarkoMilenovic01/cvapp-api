@@ -17,7 +17,7 @@ import java.util.UUID;
  *
  * Flow:
  * 1. Generate a random token.
- * 2. Store its hash and return the raw token.
+ * 2. Store its hash and return the raw token to the internal session flow.
  * 3. Validate the hash and expiration when the token is used.
  * 4. Delete the token when it expires or the session ends.
  */
@@ -30,6 +30,13 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
+    /**
+     * Creates a refresh token, persists only its SHA-256 hash, and returns the
+     * raw value for transport through the refresh-token cookie.
+     *
+     * @param user owner of the new refresh token
+     * @return raw refresh token; callers must not serialize it in a response body
+     */
     @Transactional
     public String createRefreshToken(User user) {
         String rawToken = UUID.randomUUID().toString();
@@ -45,6 +52,17 @@ public class RefreshTokenService {
         return rawToken;
     }
 
+    /**
+     * Resolves a raw refresh token against its stored hash and verifies that it
+     * has not expired.
+     *
+     * @param rawToken refresh token received from the cookie
+     * @return the valid persisted refresh token
+     * @throws com.best.cvapp.auth.session.exception.InvalidRefreshTokenException
+     *         when the token is unknown
+     * @throws com.best.cvapp.auth.session.exception.RefreshTokenExpiredException
+     *         when the token has expired
+     */
     @Transactional
     public RefreshToken validateRefreshToken(String rawToken) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(
